@@ -1,0 +1,15 @@
+# Ignore virtual env
+venv/
+
+# Ignore Python clutter
+__pycache__/
+*.py[cod]
+
+# Ignore editor/project files
+.vscode/
+.idea/
+
+# Ignore data junk
+*.log
+.DS_Store
+.env
