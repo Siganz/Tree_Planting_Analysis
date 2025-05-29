@@ -1,0 +1,105 @@
+[
+    {
+      "id": "borough",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Borough_Boundary/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "community_districts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Community_Districts/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "council_districts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_City_Council_Districts/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "congressional_districts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/ArcGIS/rest/services/NYC_Congressional_Districts/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "senate_districts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_State_Senate_Districts/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "assembly_districts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_State_Assembly_Districts/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "community_tabulations",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Community_District_Tabulation_Areas_2020/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "neighborhood_tabulations",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2020/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "census_tracts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Census_Tracts_for_2020_US_Census/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "census_blocks",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Census_Blocks_for_2020_US_Census/FeatureServer/0",
+      "schema": "political"
+    },
+    {
+      "id": "zoning_districts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/nyzd/FeatureServer/0",
+      "schema": "zoning"
+    },
+    {
+      "id": "commercial_districts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/nyco/FeatureServer/0",
+      "schema": "zoning"
+    },
+    {
+      "id": "special_purpose_districts",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/nysp/FeatureServer/0",
+      "schema": "zoning"
+    },
+    {
+      "id": "pluto",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0",
+      "schema": "land_use"
+    },
+    {
+      "id": "street_center",
+      "source_type": "arcgis_services",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/DCM_Street_Center_Line/FeatureServer/0",
+      "schema": "infrastructure"
+    },
+    {
+      "id": "curb",
+      "source_type": "arcgis_services",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/Curb_2022/FeatureServer/4",
+      "schema": "infrastructure"
+    },
+    {
+      "id": "sidewalk",
+      "source_type": "arcgis_services",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/Sidewalk_2022/FeatureServer/22",
+      "schema": "infrastructure"
+    }
+  ]
+  

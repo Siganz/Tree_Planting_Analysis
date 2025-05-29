@@ -1,0 +1,16 @@
+name: planting_env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - geopandas
+  - requests
+  - shapely
+  - fiona
+  - rasterio
+  - gdal
+  - pyproj
+  - jupyterlab
+  - matplotlib
+  - sqlalchemy

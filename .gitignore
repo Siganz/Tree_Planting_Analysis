@@ -4,6 +4,12 @@ venv/
 # Ignore Python clutter
 __pycache__/
 *.py[cod]
+github/
+chatgpt/
+portable_git/
+secret/
+scripts/garbage
+config/config.yaml
 
 # Ignore editor/project files
 .vscode/
