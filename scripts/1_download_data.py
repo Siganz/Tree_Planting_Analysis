@@ -1,5 +1,7 @@
 from pathlib import Path
 from io import BytesIO
+from sqlalchemy import create_engine
+from shapely.geometry import Point
 import zipfile
 import json
 import yaml
@@ -7,7 +9,6 @@ import requests
 import geopandas as gpd
 import fiona
 import shutil
-from sqlalchemy import create_engine
 
 # 1) Paths
 base_dir           = Path.cwd()
