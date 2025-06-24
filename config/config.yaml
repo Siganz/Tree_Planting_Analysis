@@ -1,0 +1,15 @@
+socrata:
+  app_token: "7dUkig8gydigidDN6G638J8Lr"
+
+db:
+  enabled: false
+  driver: postgresql
+  host: localhost
+  port: 5432
+  user: Shawn.Ganz
+  password: Maria23!!!?
+  database: streettrees       # name of the DB you want created/used
+
+output_epsg: 2263
+output_shapefile: Data/shapefiles
+output_tables: Data/tables

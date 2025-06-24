@@ -9,7 +9,6 @@ chatgpt/
 portable_git/
 secret/
 scripts/garbage
-config/config.yaml
 data/
 notebooks/
 docs/
