@@ -1,77 +1,78 @@
-import arcpy
-import math
-import os
+"""Generate curb polygons around lines using GeoPandas/Shapely."""
 
-def get_dominant_segment_angle(polyline_geom):
-    max_len = 0
-    best_angle = 0
-    for i in range(polyline_geom.partCount):
-        part = polyline_geom.getPart(i)
-        prev_point = None
-        for pt in part:
-            if not pt: continue
-            if prev_point:
-                dx = pt.X - prev_point.X
-                dy = pt.Y - prev_point.Y
-                seg_len = math.hypot(dx, dy)
-                if seg_len > max_len:
-                    max_len = seg_len
-                    best_angle = math.atan2(dy, dx)
-            prev_point = pt
+import math
+from pathlib import Path
+
+import geopandas as gpd
+import yaml
+from shapely.geometry import Polygon
+
+def get_dominant_segment_angle(line):
+    """Return angle (radians) of the longest segment in a LineString."""
+    max_len = 0.0
+    best_angle = 0.0
+    coords = list(line.coords)
+    for (x1, y1), (x2, y2) in zip(coords[:-1], coords[1:]):
+        dx = x2 - x1
+        dy = y2 - y1
+        seg_len = math.hypot(dx, dy)
+        if seg_len > max_len:
+            max_len = seg_len
+            best_angle = math.atan2(dy, dx)
     return best_angle
 
-def script_tool(input_feature_class, output_feature_class, extension_distance, buffer_width):
-    """Fast rectangular polygon generator around lines with extension."""
-    arcpy.env.overwriteOutput = True
-    spatial_ref = arcpy.Describe(input_feature_class).spatialReference
+def generate_polygons(lines_gdf, extension_distance, buffer_width):
+    """Return GeoDataFrame of rectangles around each line."""
+    polys = []
+    for line in lines_gdf.geometry:
+        if line is None or len(line.coords) < 2:
+            continue
 
-    arcpy.CreateFeatureclass_management(
-        out_path=os.path.dirname(output_feature_class),
-        out_name=os.path.basename(output_feature_class),
-        geometry_type='POLYGON',
-        spatial_reference=spatial_ref
-    )
+        angle = get_dominant_segment_angle(line)
+        sx, sy = line.coords[0]
+        ex, ey = line.coords[-1]
 
-    with arcpy.da.SearchCursor(input_feature_class, ['SHAPE@']) as sCursor, \
-         arcpy.da.InsertCursor(output_feature_class, ['SHAPE@']) as iCursor:
+        # Extend line ends
+        sx -= extension_distance * math.cos(angle)
+        sy -= extension_distance * math.sin(angle)
+        ex += extension_distance * math.cos(angle)
+        ey += extension_distance * math.sin(angle)
 
-        for polyline_geom in sCursor:
-            line = polyline_geom[0]
-            if line.pointCount < 2:
-                continue  # Skip degenerate lines
+        # Buffer offset
+        dx = (buffer_width / 2.0) * math.sin(angle)
+        dy = (buffer_width / 2.0) * math.cos(angle)
 
-            angle = get_dominant_segment_angle(line)
-            start = line.firstPoint
-            end = line.lastPoint
+        points = [
+            (sx - dx, sy + dy),
+            (ex - dx, ey + dy),
+            (ex + dx, ey - dy),
+            (sx + dx, sy - dy),
+        ]
+        polys.append(Polygon(points))
 
-            # Extend line ends
-            sx = start.X - extension_distance * math.cos(angle)
-            sy = start.Y - extension_distance * math.sin(angle)
-            ex = end.X + extension_distance * math.cos(angle)
-            ey = end.Y + extension_distance * math.sin(angle)
+    return gpd.GeoDataFrame({"geometry": polys}, crs=lines_gdf.crs)
 
-            # Buffer offset
-            dx = (buffer_width / 2.0) * math.sin(angle)
-            dy = (buffer_width / 2.0) * math.cos(angle)
+def main():
+    base_dir = Path.cwd()
+    cfg_path = base_dir / "config" / "config.yaml"
+    with open(cfg_path) as f:
+        config = yaml.safe_load(f)
 
-            points = [
-                arcpy.Point(sx - dx, sy + dy),
-                arcpy.Point(ex - dx, ey + dy),
-                arcpy.Point(ex + dx, ey - dy),
-                arcpy.Point(sx + dx, sy - dy)
-            ]
+    curb_cfg = config.get("curb", {})
+    ext_dist = float(curb_cfg.get("extension_distance", 0))
+    buff_width = float(curb_cfg.get("buffer_width", 0))
 
-            polygon = arcpy.Polygon(arcpy.Array(points), spatial_ref)
-            iCursor.insertRow([polygon])
+    out_dir = Path(config.get("output_shapefiles", "Data/shapefiles"))
+    gpkg = out_dir / "project_data.gpkg"
 
-    return output_feature_class
+    lines = gpd.read_file(gpkg, layer="curb")
+    polys = generate_polygons(lines, ext_dist, buff_width)
 
-# ─── Entry Point ───
+    polys.to_file(gpkg, layer="curb_buffer", driver="GPKG")
+    print(f"✅ wrote {gpkg} layer 'curb_buffer'")
+
+    return gpkg
+
+
 if __name__ == "__main__":
-    input_feature_class = arcpy.GetParameterAsText(0)
-    output_feature_class = arcpy.GetParameterAsText(1)
-    extension_distance = float(arcpy.GetParameterAsText(2))
-    buffer_width = float(arcpy.GetParameterAsText(3))
-
-    result = script_tool(input_feature_class, output_feature_class, extension_distance, buffer_width)
-    arcpy.SetParameterAsText(1, result)
+    main()
