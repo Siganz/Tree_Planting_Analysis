@@ -89,3 +89,16 @@
 2. spatial join w/ centerlines
 3. join field
 - This provides the sidewalks with the street they are on. This is so signs near the intersection can attach to the correct sidewalk. 
+
+### Idea
+Input > Decision Tree
+1. Socrata
+    1. Shapefile
+    2. GeoJSON
+    3. JSON
+    4. CSV
+2. ArcGIS/REST
+    1. Shapefile
+    2. GeoJSON
+    3. JSON
+    4. CSV

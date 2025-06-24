@@ -1,0 +1,38 @@
+[
+    {
+      "id": "trees",
+      "source_type": "socrata",
+      "format": "json",
+      "url": "https://data.cityofnewyork.us/resource/hn5i-inap.json",
+      "schema": "political"
+    },
+    {
+      "id": "work_orders",
+      "source_type": "socrata",
+      "format": "json",
+      "url": "https://data.cityofnewyork.us/resource/bdjm-n7q4.json",
+      "schema": "political"
+    },
+    {
+      "id": "planting_spaces",
+      "source_type": "socrata",
+      "format": "json",
+      "url": "https://data.cityofnewyork.us/resource/82zj-84is.json",
+      "schema": "political"
+    },
+    {
+      "id": "street_sign",
+      "source_type": "socrata",
+      "format": "json",
+      "url": "https://data.cityofnewyork.us/resource/qt6m-xctn.json",
+      "schema": "political"
+    },
+    {
+      "id": "borough",
+      "source_type": "arcgis",
+      "format": "shapefile",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Borough_Boundary/FeatureServer/0",
+      "schema": "political"
+    }
+  ]
+  

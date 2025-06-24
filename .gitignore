@@ -10,6 +10,9 @@ portable_git/
 secret/
 scripts/garbage
 config/config.yaml
+data/
+notebooks/
+docs/
 
 # Ignore editor/project files
 .vscode/

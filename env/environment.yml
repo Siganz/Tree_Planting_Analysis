@@ -1,4 +1,4 @@
-name: planting_env
+name: stp
 channels:
   - conda-forge
 dependencies:

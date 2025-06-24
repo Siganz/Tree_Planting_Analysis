@@ -1,0 +1,13 @@
+# Street Tree Planting Analysis
+
+## Prerequisites
+
+- Install [Anaconda](https://www.anaconda.com/products/individual) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) (Python 3.11+).
+- Make sure `conda` is on your PATH.
+
+## 1) Create the Conda environment
+
+```bash
+git clone https://github.com/shawnganznyc/Street_Tree_Planting_Analysis.git
+cd Street_Tree_Planting_Analysis
+conda env create -f environment.yml
