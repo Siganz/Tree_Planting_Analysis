@@ -10,4 +10,11 @@
 ```bash
 git clone https://github.com/shawnganznyc/Street_Tree_Planting_Analysis.git
 cd Street_Tree_Planting_Analysis
-conda env create -f environment.yml
+conda env create -f env/environment.yml
+```
+
+## 2) Activate the environment
+
+```bash
+conda activate stp
+```
