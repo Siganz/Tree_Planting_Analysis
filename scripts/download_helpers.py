@@ -49,7 +49,8 @@ def fetch_socrata_table(url: str, app_token: str = None):
         data = resp.json()
     except ValueError:
         # If it’s not JSON, try CSV fallback
-        df = pd.read_csv(url, headers=headers, sep=",")
+        # We already have the response content, so parse it directly
+        df = pd.read_csv(BytesIO(resp.content))
     else:
         df = pd.DataFrame(data)
 
@@ -167,7 +168,7 @@ def fetch_socrata_vector(url: str, app_token: str = None):
     resp.raise_for_status()
 
     try:
-        gdf = gpd.read_file(resp.text)
+        gdf = gpd.read_file(BytesIO(resp.content))
     except Exception:
         return []
 
@@ -250,7 +251,7 @@ def fetch_arcgis_vector(url: str):
 
         # Read just this page into a GeoDataFrame
         try:
-            page_gdf = gpd.read_file(resp.text)
+            page_gdf = gpd.read_file(BytesIO(resp.content))
         except Exception:
             # If the response isn’t valid GeoJSON, stop paging
             break
@@ -298,7 +299,7 @@ def fetch_geojson_direct(url: str):
     resp.raise_for_status()
 
     try:
-        gdf = gpd.read_file(resp.text)
+        gdf = gpd.read_file(BytesIO(resp.content))
     except Exception:
         return []
 
