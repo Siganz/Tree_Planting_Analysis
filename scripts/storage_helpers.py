@@ -2,6 +2,9 @@ from pathlib import Path
 from sqlalchemy import create_engine
 import pandas as pd
 import geopandas as gpd
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Database / Engine Helpers
@@ -38,8 +41,12 @@ def get_geopackage_path(output_dir: Path, filename: str = "project_data.gpkg") -
         try:
             gpkg.unlink()
         except Exception as e:
-            print(f"⚠️ Could not delete existing GeoPackage '{gpkg}': {e}")
-            print("   Make sure it isn’t open in another program, then rerun if needed.")
+            logger.warning(
+                "Could not delete existing GeoPackage '%s': %s", gpkg, e
+            )
+            logger.warning(
+                "   Make sure it isn\u2019t open in another program, then rerun if needed."
+            )
     return gpkg
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -58,15 +65,25 @@ def sanitize_layer_name(name: str) -> str:
     return safe[:60]
 
 #Need to include x/y coordinates for csv
-def reproject_all_layers(gpkg_path: Path, metadata_csv: Path, target_epsg: int = 2263):
+def reproject_all_layers(
+    gpkg_path: Path,
+    metadata_csv: Path,
+    target_epsg: int = 2263,
+    *,
+    dry_run: bool = False,
+):
     """
-    Reads layers_inventory.csv to learn each layer’s original CRS (source_epsg)
-    and, if available, service_wkid. Then:
-      1) Open each layer from gpkg_path (raw GPKG, still in source_epsg)
-      2) Assign or confirm the GeoDataFrame’s CRS = source_epsg
-      3) Reproject to target_epsg
-      4) Overwrite the layer in the GPKG with the new CRS embedded
-    Prints a line for each layer, using service_wkid if provided (ArcGIS layers).
+    Reads ``layers_inventory.csv`` to learn each layer’s original CRS
+    (``source_epsg``) and, if available, ``service_wkid``. Then:
+
+      1. Open each layer from ``gpkg_path`` (raw GPKG, still in ``source_epsg``)
+      2. Assign or confirm the GeoDataFrame’s CRS = ``source_epsg``
+      3. Reproject to ``target_epsg``
+      4. Overwrite the layer in the GPKG with the new CRS embedded
+
+    If ``dry_run`` is True, step 4 is skipped and actions are only logged.
+    Each layer’s reprojection is logged at INFO level, using ``service_wkid`` if
+    provided.
     """
     meta = pd.read_csv(metadata_csv)
     for _, row in meta.iterrows():
@@ -89,11 +106,19 @@ def reproject_all_layers(gpkg_path: Path, metadata_csv: Path, target_epsg: int =
         # 2) Reproject to target_epsg
         gdf = gdf.to_crs(epsg=target_epsg)
 
-        # 3) Overwrite the layer in the GPKG
-        gdf.to_file(gpkg_path, layer=layer_name, driver="GPKG")
-
-        # 4) Print the reproject info
-        if service_wkid:
-            print(f"Reprojected '{layer_name}': {service_wkid} → {target_epsg}")
+        # 3) Overwrite the layer in the GPKG unless dry_run
+        if not dry_run:
+            gdf.to_file(gpkg_path, layer=layer_name, driver="GPKG")
+            logger.debug("Wrote layer '%s'", layer_name)
         else:
-            print(f"Reprojected '{layer_name}': {source_epsg} → {target_epsg}")
+            logger.debug("Dry run enabled; skipping write for '%s'", layer_name)
+
+        # 4) Log the reproject info
+        if service_wkid:
+            logger.info(
+                "Reprojected '%s': %s → %s", layer_name, service_wkid, target_epsg
+            )
+        else:
+            logger.info(
+                "Reprojected '%s': %s → %s", layer_name, source_epsg, target_epsg
+            )
