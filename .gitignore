@@ -1,6 +1,3 @@
-# Ignore virtual env
-venv/
-
 # Ignore Python clutter
 __pycache__/
 *.py[cod]
