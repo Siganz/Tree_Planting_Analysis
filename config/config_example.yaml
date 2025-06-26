@@ -1,0 +1,21 @@
+#Copy this file to config.yaml and fill in the blanks
+
+ socrata:
+  app_token: "7dUkig8gydigidDN6G638J8Lr"
+
+ db:
+  enabled: false
+  driver: 
+  host: 
+  port:
+  user: 
+  password: 
+  database:      # name of the DB you want created/used
+
+output_epsg: 2263
+output_shapefile: Data/shapefiles
+output_tables: Data/tables
+
+curb:
+  extension_distance: 7
+  buffer_width: 15
