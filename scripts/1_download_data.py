@@ -4,6 +4,7 @@ import json
 import yaml
 import time
 import os
+from helpers.config import get_constant
 
 from helpers.download import (
     fetch_socrata_table,
@@ -58,7 +59,7 @@ def main():
     else:
         db_engine = None
 
-    output_epsg = config.get("output_epsg", 2263)
+    output_epsg = config.get("output_epsg", get_constant("nysp_epsg", 2263))
     output_shapefiles = Path(config.get("output_shapefiles", "Data/shapefiles"))
     output_shapefiles.mkdir(parents=True, exist_ok=True)
     output_tables = Path(config.get("output_tables", "Data/tables"))

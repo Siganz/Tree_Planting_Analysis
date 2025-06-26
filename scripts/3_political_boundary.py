@@ -4,12 +4,13 @@ from pathlib import Path
 import geopandas as gpd
 from sqlalchemy import create_engine
 from shapely.ops import unary_union
+from helpers.config import get_constant
 
 # 1) Paths and config
 base_dir = Path.cwd()
 config = yaml.safe_load(open(base_dir / "config" / "config.yaml"))
 db_cfg = config.get("db", {})
-output_epsg = config.get("output_epsg", 2263)
+output_epsg = config.get("output_epsg", get_constant("nysp_epsg", 2263))
 output_dir = Path(config.get("output_dir", "Data/shapefiles"))
 output_dir.mkdir(parents=True, exist_ok=True)
 
