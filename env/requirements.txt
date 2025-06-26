@@ -1,0 +1,11 @@
+pandas
+geopandas
+requests
+shapely
+fiona
+rasterio
+gdal
+pyproj
+jupyterlab
+matplotlib
+sqlalchemy
