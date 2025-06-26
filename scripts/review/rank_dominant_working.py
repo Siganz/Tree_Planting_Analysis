@@ -6,6 +6,7 @@ from collections import defaultdict
 arcpy.ImportToolbox(r"D:\ArcGIS\Projects\Street_Tree_Planting_Analysis\Street_Tree_Planting_Analysis.atbx", "stp")
 
 def generate_initial_points(line_fc, spacing, work_gdb):
+    """Copy input lines, then create and rank an initial set of points."""
     lines_working = str(work_gdb / "lines_working")
     if arcpy.Exists(lines_working):
         arcpy.management.Delete(lines_working)
@@ -19,6 +20,7 @@ def generate_initial_points(line_fc, spacing, work_gdb):
     return lines_working, pts
 
 def identify_non_conflicting_points(pts, spacing, work_gdb):
+    """Remove points that intersect within 'spacing' feet of each other."""
     pts_work = str(work_gdb / "pts_0_working")
     arcpy.management.CopyFeatures(pts, pts_work)
 
@@ -32,6 +34,8 @@ def identify_non_conflicting_points(pts, spacing, work_gdb):
         search_radius=f"{spacing} Feet"
     )
 
+    # Filter out self-joins so only overlapping points remain
+
     true_conflicts = str(work_gdb / "true_conflicts")
     arcpy.management.MakeFeatureLayer(conflicts_fc, "conflicts_lyr")
     arcpy.management.SelectLayerByAttribute("conflicts_lyr", "NEW_SELECTION", '"PARENT_OID" <> "PARENT_OID_1"')
@@ -39,6 +43,7 @@ def identify_non_conflicting_points(pts, spacing, work_gdb):
 
     conflict_ids = {row[0] for row in arcpy.da.SearchCursor(true_conflicts, ["TARGET_FID"])}
 
+    # Remove points whose OID appears in the conflict table
     good_boys_fc = str(work_gdb / "pts_0_cleaned")
     with arcpy.da.UpdateCursor(pts_work, ["OBJECTID"]) as cursor:
         for row in cursor:
@@ -49,6 +54,7 @@ def identify_non_conflicting_points(pts, spacing, work_gdb):
     return good_boys_fc
 
 def resolve_conflicts_iteratively(pts, lines_working, spacing, buffer_dist, work_gdb, max_iterations=3):
+    """Iteratively buffer and erase lines to remove conflicting planting points."""
     iter_n = 0
     line_suppress_map = defaultdict(list)
 
@@ -64,7 +70,7 @@ def resolve_conflicts_iteratively(pts, lines_working, spacing, buffer_dist, work
         arcpy.analysis.GenerateNearTable(
             pts, pts, near_tbl, f"{buffer_dist} Feet", "NO_LOCATION",
             closest="ALL", method="PLANAR"
-        )
+        )  # produces pairwise distances between points
 
         if int(arcpy.management.GetCount(near_tbl)[0]) == 0:
             break
@@ -95,6 +101,7 @@ def resolve_conflicts_iteratively(pts, lines_working, spacing, buffer_dist, work
         if not winners:
             break
 
+        # Points to buffer are the losers grouped by parent line
         suppression_pts = list({oid for pts in line_suppress_map.values() for oid in pts})
         existing_oids = {row[0] for row in arcpy.da.SearchCursor(pts, ["OID@"])}
         suppression_pts = [oid for oid in suppression_pts if oid in existing_oids]
@@ -182,6 +189,7 @@ def resolve_conflicts_iteratively(pts, lines_working, spacing, buffer_dist, work
     return None, None, iter_n, lines_working
 
 def rank_dominant_prune(line_fc: str, out_pts_fc: str, final_lines_fc: str, spacing: float, buffer_dist: float) -> None:
+    """High level prune workflow used by the ArcGIS tool."""
     work_gdb = Path(arcpy.env.scratchGDB)
     arcpy.env.workspace = str(work_gdb)
     arcpy.env.overwriteOutput = True

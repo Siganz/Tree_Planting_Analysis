@@ -6,15 +6,20 @@ arcpy.env.overwriteOutput = True
 scratch = arcpy.env.scratchGDB
 
 def classify(raw):
+    """Return a short code describing the sign text."""
     txt = str(raw).upper()
-    if "NO STANDING" in txt:     return "NSTAND"
-    if "NO PARKING"  in txt:     return "NPARK"
-    if "HMP"         in txt:     return "HMP"
+    if "NO STANDING" in txt:
+        return "NSTAND"
+    if "NO PARKING" in txt:
+        return "NPARK"
+    if "HMP" in txt:
+        return "HMP"
     if "TAXI" in txt or "HOTEL" in txt or "LOADING" in txt or "PASSENGER" in txt:
-                                return "CURBSIDE"
+        return "CURBSIDE"
     return "OTHER"
 
 def load_filter(csv_path, desc_f, side_f):
+    """Return cleaned DataFrame of sign records filtered by text and side."""
     df = pd.read_csv(csv_path)
     
     # normalize N/S/E/W
@@ -53,12 +58,12 @@ def load_filter(csv_path, desc_f, side_f):
 
 # helper that classifies the segment side
 def segment_compass(seg_geom, sign_pt):
+    """Return 'north', 'south', 'east', or 'west' relative to sign_pt."""
     dx = seg_geom.centroid.X - sign_pt.centroid.X
     dy = seg_geom.centroid.Y - sign_pt.centroid.Y
-    if abs(dx) >= abs(dy):                       # horizontal dominates or ties
+    if abs(dx) >= abs(dy):  # horizontal distance dominates or ties
         return "east" if dx > 0 else "west"
-    else:                                        # vertical dominates
-        return "north" if dy > 0 else "south"
+    return "north" if dy > 0 else "south"
 
 # ── 0. Params ───────────────────────────────────────────────────────────────
 # 0: csv_path, 1: sw_fc, 2: cen_fc, 3: out_fc, 4: desc_f, 5: side_f, 6: shift_ft
