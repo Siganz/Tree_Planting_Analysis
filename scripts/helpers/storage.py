@@ -2,15 +2,10 @@ from pathlib import Path
 from sqlalchemy import create_engine
 import pandas as pd
 import geopandas as gpd
-import yaml
+from helpers.config import get_constant
 
-# Load constants
-_const_path = Path(__file__).resolve().parents[2] / "config" / "constants.yml"
-with open(_const_path) as _f:
-    _C = yaml.safe_load(_f)
-
-LAYER_NAME_MAX_LENGTH = _C.get("layer_name_max_length", 60)
-DEFAULT_TARGET_EPSG = _C.get("nysp_epsg", 2263)
+LAYER_NAME_MAX_LENGTH = get_constant("layer_name_max_length", 60)
+DEFAULT_TARGET_EPSG = get_constant("nysp_epsg", 2263)
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Database / Engine Helpers

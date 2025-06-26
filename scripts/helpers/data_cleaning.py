@@ -1,16 +1,10 @@
-# data_cleaning_helpers.py
+# data_cleaning.py
 
 import geopandas as gpd
 import pandas as pd
-import yaml
-from pathlib import Path
+from helpers.config import get_constant
 
-# Load constants
-_const_path = Path(__file__).resolve().parents[2] / "config" / "constants.yml"
-with open(_const_path) as _f:
-    _C = yaml.safe_load(_f)
-
-MIN_DBH = _C.get("min_dbh", 0.01)
+MIN_DBH = get_constant("min_dbh", 0.01)
 
 def clean_trees_basic(
     trees: gpd.GeoDataFrame,

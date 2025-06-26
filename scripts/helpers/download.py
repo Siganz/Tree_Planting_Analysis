@@ -9,18 +9,13 @@ import geopandas as gpd
 import pandas as pd
 import fiona
 from shapely.geometry import Point
-from storage_helpers import sanitize_layer_name
-import yaml
+from helpers.storage import sanitize_layer_name
+from helpers.config import get_constant
 
-# Load constants
-_const_path = Path(__file__).resolve().parents[2] / "config" / "constants.yml"
-with open(_const_path) as _f:
-    _C = yaml.safe_load(_f)
-
-DEFAULT_EPSG = _C.get("default_epsg", 4326)
-NYSP_EPSG = _C.get("nysp_epsg", 2263)
-SOCRATA_LIMIT = _C.get("socrata_limit", 50000)
-ARCGIS_DEFAULT_MAX_RECORDS = _C.get("arcgis_default_max_records", 1000)
+DEFAULT_EPSG = get_constant("default_epsg", 4326)
+NYSP_EPSG = get_constant("nysp_epsg", 2263)
+SOCRATA_LIMIT = get_constant("socrata_limit", 50000)
+ARCGIS_DEFAULT_MAX_RECORDS = get_constant("arcgis_default_max_records", 1000)
 
 session = requests.Session()
 
