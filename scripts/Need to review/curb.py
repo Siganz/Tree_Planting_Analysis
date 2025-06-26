@@ -1,5 +1,4 @@
 """Generate curb polygons around lines using GeoPandas/Shapely."""
-
 import math
 from pathlib import Path
 

@@ -3,13 +3,20 @@ __pycache__/
 *.py[cod]
 secret/
 scripts/garbage
-data/
 docs/
 secrets/
 config/config.yaml
 replacements.txt
 
-# Ignore editor/project files
+# ignore all real files in Data/table
+Data/table/*
+Data/gpkg/*
+
+# but don’t ignore the directory or our placeholder
+!Data/table/
+!Data/gpkg/
+!Data/table/table.md
+!Data/gpkg/gpkg.md
 
 # Ignore data junk
 *.log
