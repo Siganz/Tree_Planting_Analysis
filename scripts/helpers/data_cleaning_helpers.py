@@ -2,6 +2,15 @@
 
 import geopandas as gpd
 import pandas as pd
+import yaml
+from pathlib import Path
+
+# Load constants
+_const_path = Path(__file__).resolve().parents[2] / "config" / "constants.yml"
+with open(_const_path) as _f:
+    _C = yaml.safe_load(_f)
+
+MIN_DBH = _C.get("min_dbh", 0.01)
 
 def clean_trees_basic(
     trees: gpd.GeoDataFrame,
@@ -28,7 +37,7 @@ def clean_trees_advanced(
     structure_field: str = "tpstructure",
     require_structure: str = "Full",
     dbh_field: str = "dbh",
-    min_dbh: float = 0.01,
+    min_dbh: float = MIN_DBH,
     # planting-space join
     ps_key: str = "plantingspaceglobalid",
     ps_globalid: str = "globalid",
