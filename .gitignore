@@ -5,6 +5,8 @@ secret/
 scripts/garbage
 data/
 docs/
+secrets/
+config/config.yaml
 
 # Ignore editor/project files
 
