@@ -30,6 +30,13 @@
 * Imports: stdlib → third-party → local
 * Max line length: 79
 
+## 🧑‍💻 Code Style and Documentation
+
+- All public functions and classes must have clear, descriptive docstrings.
+- Add inline `# comments` to explain non-obvious or complex code sections.
+- Logging (`logger.info`, etc.) should be used in main workflow scripts to track progress and issues.
+- Helpers should avoid logging except for critical errors; prefer raising exceptions for error handling.
+
 ## 📋 PR/Commit
 
 * Branch: `codex/<short-desc>`
