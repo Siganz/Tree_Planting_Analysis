@@ -3,9 +3,38 @@
 ## 🗺️ Project Scope
 
 * **Primary code** lives in `scripts/`
-* **Configs/templates** in `config/` (`config.example.yml`).
-* **Data inputs** live under `Data/` (gpkg, table) but agent **should not** modify raw data.
-* **Ignore** in `.gitignore` will show all hidden files. Most importantly data, because we don't need data on the github. Locally, these files will be created, just never pushed to github. Keep that in mind. 
+* **Configs/templates** in `config/` (`config.example.yml`)
+* **Data inputs** live under `Data/` (GPKG, tables), but agents **must not** modify raw data.
+* **Ignore** entries in `.gitignore` include hidden files and data folders—these are generated locally and should never be committed.
+
+## 🧪 Testing Guidelines
+
+* The test environment does **not** include GIS-native libraries (GDAL, Fiona, Rasterio) or `gdal-config`.
+* **Skip** or **stub** any tests or code paths that import or call GIS functions:
+
+  * Wrap or guard imports:
+
+    ```python
+    try:
+        from osgeo import gdal
+    except ImportError:
+        gdal = None
+    ```
+  * Mark tests for GIS-dependent modules with `@pytest.mark.skip` or conditional skip logic:
+
+    ```python
+    import pytest
+
+    try:
+        import fiona
+    except ImportError:
+        pytest.skip("GIS libraries not available in test env", allow_module_level=True)
+    ```
+* Pure-Python modules (e.g., data transformers, API clients) should be tested normally.
+
+---
+
+*Agents should use this doc to understand project boundaries and testing constraints.*
 
 ## 🚀 Setup
 

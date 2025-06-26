@@ -12,6 +12,14 @@ dependencies:
   - gdal
   - pyproj
   - sqlalchemy
+
+  # dev tools
+  - black
+  - flake8
+  - isort
+  - pytest
+  
+  #pip packages
   - pip
   - pip:
       - requests

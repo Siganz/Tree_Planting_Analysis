@@ -1,11 +1,12 @@
 pandas
-geopandas
+geopandas        # pure-Python wheel
 requests
-shapely
-fiona
-rasterio
-gdal
-pyproj
+shapely          # binary wheel available
+pyproj           # binary wheel available
 jupyterlab
 matplotlib
 sqlalchemy
+black
+flake8
+isort
+pytest
