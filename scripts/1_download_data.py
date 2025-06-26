@@ -5,7 +5,7 @@ import yaml
 import time
 import os
 
-from download_helpers import (
+from helpers.download_helpers import (
     fetch_socrata_table,
     fetch_socrata_vector,
     fetch_arcgis_table,
@@ -16,13 +16,13 @@ from download_helpers import (
     fetch_gdb_or_zip,
     export_spatial_layer,
 )
-from storage_helpers import (
+from helpers.storage_helpers import (
     get_postgis_engine,
     get_geopackage_path,
     sanitize_layer_name,
     reproject_all_layers,
 )
-from table_helpers import (
+from helpers.table_helpers import (
     record_layer_metadata_csv,
     record_layer_metadata_db
 )
