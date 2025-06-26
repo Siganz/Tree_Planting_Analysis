@@ -7,11 +7,12 @@ __pycache__/
 github/
 chatgpt/
 portable_git/
-secret/
+secrets/
 scripts/garbage
 data/
 notebooks/
 docs/
+config/config.yaml
 
 # Ignore editor/project files
 .vscode/
