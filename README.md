@@ -29,13 +29,11 @@ pip install -r env/requirements.txt
 
 ## Environment Setup
 
-The project uses a hybrid Conda and pip workflow.
-Key environment files are located in `env/`:
+This project uses a simple pip-based workflow for development and code review.
 
-- `environment.yml` – base Conda environment specification.
-- `requirements.txt` – additional Python packages installed via `pip`.
+**To install the required developer tools, run:**
 
-For a step-by-step guide see [`env/_environment_readme`](env/_environment_readme).
+pip install black flake8 isort pytest
 
 ## Folder Structure
 
