@@ -1,7 +1,10 @@
-# data_cleaning_helpers.py
+# data_cleaning.py
 
 import geopandas as gpd
 import pandas as pd
+from helpers.config import get_constant
+
+MIN_DBH = get_constant("min_dbh", 0.01)
 
 def clean_trees_basic(
     trees: gpd.GeoDataFrame,
@@ -28,7 +31,7 @@ def clean_trees_advanced(
     structure_field: str = "tpstructure",
     require_structure: str = "Full",
     dbh_field: str = "dbh",
-    min_dbh: float = 0.01,
+    min_dbh: float = MIN_DBH,
     # planting-space join
     ps_key: str = "plantingspaceglobalid",
     ps_globalid: str = "globalid",

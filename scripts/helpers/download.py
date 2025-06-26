@@ -9,7 +9,13 @@ import geopandas as gpd
 import pandas as pd
 import fiona
 from shapely.geometry import Point
-from storage_helpers import sanitize_layer_name
+from helpers.storage import sanitize_layer_name
+from helpers.config import get_constant
+
+DEFAULT_EPSG = get_constant("default_epsg", 4326)
+NYSP_EPSG = get_constant("nysp_epsg", 2263)
+SOCRATA_LIMIT = get_constant("socrata_limit", 50000)
+ARCGIS_DEFAULT_MAX_RECORDS = get_constant("arcgis_default_max_records", 1000)
 
 session = requests.Session()
 
@@ -37,9 +43,9 @@ def fetch_socrata_table(url: str, app_token: str = None):
     # If this is the hn5i-inap endpoint without a $limit, add one to pull all rows
     if url.lower().endswith(".json") and "resource/hn5i-inap.json" in url.lower():
         if "?" in url:
-            url = url + "&$limit=50000"
+            url = url + f"&$limit={SOCRATA_LIMIT}"
         else:
-            url = url + "?$limit=50000"
+            url = url + f"?$limit={SOCRATA_LIMIT}"
 
     resp = session.get(url, headers=headers)
     resp.raise_for_status()
@@ -66,10 +72,10 @@ def fetch_socrata_table(url: str, app_token: str = None):
             gdf = gpd.GeoDataFrame(
                 df.drop(columns=["latitude", "longitude"]),
                 geometry=geom,
-                crs="EPSG:4326"
+                crs=f"EPSG:{DEFAULT_EPSG}"
             )
             layer_name = sanitize_layer_name(Path(url).stem)
-            return [(layer_name, gdf, 4326)]
+            return [(layer_name, gdf, DEFAULT_EPSG)]
         except Exception:
             pass  # If parsing fails, fall through to next case
 
@@ -90,9 +96,9 @@ def fetch_socrata_table(url: str, app_token: str = None):
                 except Exception:
                     continue
         if coords:
-            gdf = gpd.GeoDataFrame(rows, geometry=coords, crs="EPSG:4326")
+            gdf = gpd.GeoDataFrame(rows, geometry=coords, crs=f"EPSG:{DEFAULT_EPSG}")
             layer_name = sanitize_layer_name(Path(url).stem)
-            return [(layer_name, gdf, 4326)]
+            return [(layer_name, gdf, DEFAULT_EPSG)]
 
     # CASE 3: WKT "geometry" field
     if "geometry" in df.columns:
@@ -112,9 +118,9 @@ def fetch_socrata_table(url: str, app_token: str = None):
                 except Exception:
                     continue
         if coords:
-            gdf = gpd.GeoDataFrame(rows, geometry=coords, crs="EPSG:4326")
+            gdf = gpd.GeoDataFrame(rows, geometry=coords, crs=f"EPSG:{DEFAULT_EPSG}")
             layer_name = sanitize_layer_name(Path(url).stem)
-            return [(layer_name, gdf, 4326)]
+            return [(layer_name, gdf, DEFAULT_EPSG)]
 
     # CASE 4: projected X/Y fields (e.g. "sign_x_coord" & "sign_y_coord")
     # Here we assume EPSG:2263 if both fields exist.
@@ -123,7 +129,7 @@ def fetch_socrata_table(url: str, app_token: str = None):
     # You can customize this to match any pair of fields your tables use.
     if "sign_x_coord" in df.columns and "sign_y_coord" in df.columns:
         x_field, y_field = "sign_x_coord", "sign_y_coord"
-        source_epsg = 2263
+        source_epsg = NYSP_EPSG
     # You could add more pairs here if other tables use different column names.
 
     if x_field and y_field:
@@ -158,12 +164,12 @@ def fetch_socrata_vector(url: str, app_token: str = None):
 
     # If the URL already ends with “.geojson”, just add $limit; otherwise force &f=geojson
     if url.lower().endswith(".geojson"):
-        resp = session.get(url, headers=headers, params={"$limit": 50000})
+        resp = session.get(url, headers=headers, params={"$limit": SOCRATA_LIMIT})
     else:
         resp = session.get(
             url,
             headers=headers,
-            params={"$limit": 50000, "f": "geojson"}
+            params={"$limit": SOCRATA_LIMIT, "f": "geojson"}
         )
     resp.raise_for_status()
 
@@ -173,10 +179,10 @@ def fetch_socrata_vector(url: str, app_token: str = None):
         return []
 
     # GeoPandas might not auto‐assign a CRS, so force WGS84
-    gdf.set_crs(epsg=4326, inplace=True)
+    gdf.set_crs(epsg=DEFAULT_EPSG, inplace=True)
 
     layer_name = sanitize_layer_name(Path(url).stem)
-    return [(layer_name, gdf, 4326)]
+    return [(layer_name, gdf, DEFAULT_EPSG)]
 
 def export_spatial_layer(gdf, data_id, gpkg_path):
     """
@@ -211,10 +217,10 @@ def fetch_arcgis_table(url: str):
     gdf = gpd.GeoDataFrame(
         df.drop(columns=["latitude", "longitude"]),
         geometry=geometry,
-        crs="EPSG:4326"
+        crs=f"EPSG:{DEFAULT_EPSG}"
     )
     layer_name = sanitize_layer_name(Path(url).stem)
-    return [(layer_name, gdf, 4326)]
+    return [(layer_name, gdf, DEFAULT_EPSG)]
 
 def fetch_arcgis_vector(url: str):
     """
@@ -228,11 +234,11 @@ def fetch_arcgis_vector(url: str):
     # 1) Read service metadata & extract WKID + maxRecordCount
     info = session.get(f"{url}?f=json").json()
     sr = info.get("spatialReference", {})
-    native_wkid = sr.get("latestWkid") or sr.get("wkid") or 4326
+    native_wkid = sr.get("latestWkid") or sr.get("wkid") or DEFAULT_EPSG
 
-    max_records = info.get("maxRecordCount", 1000)
+    max_records = info.get("maxRecordCount", ARCGIS_DEFAULT_MAX_RECORDS)
     if not isinstance(max_records, int) or max_records < 1:
-        max_records = 1000  # fallback if the service returns something unexpected
+        max_records = ARCGIS_DEFAULT_MAX_RECORDS  # fallback if service misbehaves
 
     # 2) Page through all features using resultOffset/resultRecordCount
     all_parts = []  # list of GeoDataFrames for each page
@@ -260,8 +266,8 @@ def fetch_arcgis_vector(url: str):
             # No features left in this page: we’re done
             break
 
-        # Force CRS to WGS84 (GeoJSON is always in 4326)
-        page_gdf = page_gdf.set_crs(epsg=4326, allow_override=True)
+        # Force CRS to WGS84 (GeoJSON is always in DEFAULT_EPSG)
+        page_gdf = page_gdf.set_crs(epsg=DEFAULT_EPSG, allow_override=True)
 
         all_parts.append(page_gdf)
 
@@ -282,10 +288,10 @@ def fetch_arcgis_vector(url: str):
 
     gdf_full = gpd.GeoDataFrame(
         pd.concat(clean_parts, ignore_index=True),
-        crs="EPSG:4326"
+        crs=f"EPSG:{DEFAULT_EPSG}"
     )
 
-    return [(None, gdf_full, 4326, native_wkid)]
+    return [(None, gdf_full, DEFAULT_EPSG, native_wkid)]
 
 # ────────────────────────────────────────────────────────────────────────────────
 # “Direct” helpers (no Socrata/ArcGIS)
@@ -303,9 +309,9 @@ def fetch_geojson_direct(url: str):
     except Exception:
         return []
 
-    gdf.set_crs(epsg=4326, inplace=True)
+    gdf.set_crs(epsg=DEFAULT_EPSG, inplace=True)
     layer_name = sanitize_layer_name(Path(url).stem)
-    return [(layer_name, gdf, 4326)]
+    return [(layer_name, gdf, DEFAULT_EPSG)]
 
 def fetch_csv_direct(url: str):
     """
@@ -348,9 +354,9 @@ def fetch_gpkg_layers(url: str):
             continue
 
         if gdf.crs is None:
-            gdf.set_crs(epsg=4326, inplace=True)
+            gdf.set_crs(epsg=DEFAULT_EPSG, inplace=True)
 
-        results.append((ln, gdf, 4326))
+        results.append((ln, gdf, DEFAULT_EPSG))
 
     return results
 
@@ -383,8 +389,8 @@ def fetch_gdb_or_zip(url: str):
             if gdf.empty:
                 continue
             if gdf.crs is None:
-                gdf.set_crs(epsg=4326, inplace=True)
-            results.append((ln, gdf, 4326))
+                gdf.set_crs(epsg=DEFAULT_EPSG, inplace=True)
+            results.append((ln, gdf, DEFAULT_EPSG))
     else:
         # Treat all Shapefile (.shp) files under temp_root
         for shp in Path(temp_root).rglob("*.shp"):
@@ -392,9 +398,9 @@ def fetch_gdb_or_zip(url: str):
             if gdf.empty:
                 continue
             if gdf.crs is None:
-                gdf.set_crs(epsg=4326, inplace=True)
+                gdf.set_crs(epsg=DEFAULT_EPSG, inplace=True)
             layer_name = shp.stem
-            results.append((layer_name, gdf, 4326))
+            results.append((layer_name, gdf, DEFAULT_EPSG))
 
     shutil.rmtree(temp_root)
     return results

@@ -2,6 +2,10 @@ from pathlib import Path
 from sqlalchemy import create_engine
 import pandas as pd
 import geopandas as gpd
+from helpers.config import get_constant
+
+LAYER_NAME_MAX_LENGTH = get_constant("layer_name_max_length", 60)
+DEFAULT_TARGET_EPSG = get_constant("nysp_epsg", 2263)
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Database / Engine Helpers
@@ -50,15 +54,15 @@ def sanitize_layer_name(name: str) -> str:
     """
     - Replace any non-alphanumeric or underscore with “_”
     - If it starts with a digit, prefix an underscore
-    - Truncate to 60 characters (to stay under common SQLite/ArcGIS limits)
+    - Truncate to LAYER_NAME_MAX_LENGTH characters
     """
     safe = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in name)
     if safe and safe[0].isdigit():
         safe = "_" + safe
-    return safe[:60]
+    return safe[:LAYER_NAME_MAX_LENGTH]
 
 #Need to include x/y coordinates for csv
-def reproject_all_layers(gpkg_path: Path, metadata_csv: Path, target_epsg: int = 2263):
+def reproject_all_layers(gpkg_path: Path, metadata_csv: Path, target_epsg: int = DEFAULT_TARGET_EPSG):
     """
     Reads layers_inventory.csv to learn each layer’s original CRS (source_epsg)
     and, if available, service_wkid. Then:

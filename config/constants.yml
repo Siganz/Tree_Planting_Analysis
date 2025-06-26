@@ -1,0 +1,6 @@
+default_epsg: 4326
+nysp_epsg: 2263
+socrata_limit: 50000
+arcgis_default_max_records: 1000
+layer_name_max_length: 60
+min_dbh: 0.01
