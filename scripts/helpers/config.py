@@ -5,6 +5,8 @@ _CONSTANTS = None
 
 
 def _load_constants():
+    """Load constants.yml once and cache the parsed dictionary."""
+
     global _CONSTANTS
     if _CONSTANTS is None:
         const_path = Path(__file__).resolve().parents[2] / "config" / "constants.yml"
