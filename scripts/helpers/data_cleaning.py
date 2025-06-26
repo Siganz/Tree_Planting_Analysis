@@ -14,10 +14,7 @@ def clean_trees_basic(
     id_field: str = "objectid",
     out_id: str = "TreeID"
 ) -> gpd.GeoDataFrame:
-    """
-    Basic: keep only rows where tpstructure == "Full",
-    return [TreeID, geometry].
-    """
+    """Return trees with full structure as a GeoDataFrame of [TreeID, geometry]."""
     df = trees.loc[trees[structure_field] == require_structure, [id_field, "geometry"]].copy()
     return df.rename(columns={id_field: out_id})
 
@@ -43,15 +40,7 @@ def clean_trees_advanced(
     id_field: str = "objectid",
     out_id: str = "TreeID"
 ) -> gpd.GeoDataFrame:
-    """
-    Advanced: 
-     1) drop by tpcondition,
-     2) require structure/full,
-     3) DBH > min_dbh,
-     4) inner-join to planting_spaces,
-     5) filter PS status/jurisdiction,
-     6) return [TreeID, geometry].
-    """
+    """Return cleaned trees joined to planting spaces and filtered by DBH."""
     # 1–3: tree filters
     mask = (
         ~trees[condition_field].isin(drop_conditions) &
@@ -96,13 +85,7 @@ def canceld_work_orders(
     id_field: str = "objectid",
     out_id: str = "WOID"
 ) -> gpd.GeoDataFrame:
-    """
-    1) Keep only planting work‐orders:
-       • Type in allowed_types
-       • Category == allow_category
-    2) Keep only cancelled orders (wostatus == cancel_status)
-    3) Return GeoDataFrame with just [out_id, geometry]
-    """
+    """Filter work orders to cancelled planting jobs and return [WOID, geometry]."""
     mask = (
         wo[wo_type_field].isin(allowed_types) &
         (wo[wo_cat_field] == allow_category) &
@@ -121,11 +104,7 @@ def clean_planting_spaces(
     id_field: str = "globalid",
     out_id: str = "PSID"
 ) -> gpd.GeoDataFrame:
-    """
-    1) Keep only PlantingSpaces where psstatus == keep_status
-    2) Exclude those with jurisdiction == exclude_jur (optional)
-    3) Return GeoDataFrame with just [out_id, geometry]
-    """
+    """Return populated planting spaces excluding private sites."""
     mask = (ps[status_field] == keep_status)
     if exclude_jur:
         mask &= (ps[jur_field] != exclude_jur)
@@ -150,9 +129,7 @@ def clean_street_signs(
         "sign_design_voided_on_date"
     ]
 ) -> gpd.GeoDataFrame:
-    """
-    Normalize and clean the street_signs layer, keeping only record_type == 'Current'.
-    """
+    """Clean street sign records and drop any non-current entries."""
     df = gdf.copy()
 
     # 0) keep only Current orders

@@ -52,6 +52,7 @@ def generate_polygons(lines_gdf, extension_distance, buffer_width):
     return gpd.GeoDataFrame({"geometry": polys}, crs=lines_gdf.crs)
 
 def main():
+    """Entry point for CLI usage: build curb buffer polygons."""
     base_dir = Path.cwd()
     cfg_path = base_dir / "config" / "config.yaml"
     with open(cfg_path) as f:
