@@ -2,9 +2,10 @@
 
 import geopandas as gpd
 import pandas as pd
-from helpers.config import get_constant
+from config import get_constant
 
 MIN_DBH = get_constant("min_dbh", 0.01)
+
 
 def clean_trees_basic(
     trees: gpd.GeoDataFrame,
@@ -17,6 +18,7 @@ def clean_trees_basic(
     """Return trees with full structure as a GeoDataFrame of [TreeID, geometry]."""
     df = trees.loc[trees[structure_field] == require_structure, [id_field, "geometry"]].copy()
     return df.rename(columns={id_field: out_id})
+
 
 def clean_trees_advanced(
     trees: gpd.GeoDataFrame,
@@ -68,7 +70,7 @@ def clean_trees_advanced(
     return gpd.GeoDataFrame(df, geometry="geometry", crs=trees.crs) \
              .rename(columns={id_field: out_id})
 
-def canceld_work_orders(
+def canceled_work_orders(
 
     wo: gpd.GeoDataFrame,
     *,

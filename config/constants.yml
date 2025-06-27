@@ -4,3 +4,7 @@ socrata_limit: 50000
 arcgis_default_max_records: 1000
 layer_name_max_length: 60
 min_dbh: 0.01
+default_output_shapefile_dir: "Data/shapefiles"
+default_output_table_dir: "Data/tables"
+data_inventory_filename: "data_inventory.csv"
+default_gpkg_name: "project_data.gpkg"

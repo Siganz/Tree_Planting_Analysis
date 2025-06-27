@@ -1,4 +1,3 @@
-import os
 import requests
 import zipfile
 import tempfile
@@ -9,8 +8,8 @@ import geopandas as gpd
 import pandas as pd
 import fiona
 from shapely.geometry import Point
-from helpers.storage import sanitize_layer_name
-from helpers.config import get_constant
+from storage import sanitize_layer_name
+from config import get_constant
 
 DEFAULT_EPSG = get_constant("default_epsg", 4326)
 NYSP_EPSG = get_constant("nysp_epsg", 2263)
@@ -152,6 +151,7 @@ def fetch_socrata_table(url: str, app_token: str = None):
     # If we reach here, no geometry was found
     return []
 
+
 def fetch_socrata_vector(url: str, app_token: str = None):
     """
     Fetch a Socrata “vector” (GeoJSON) endpoint and return a GeoDataFrame in EPSG:4326.
@@ -184,6 +184,7 @@ def fetch_socrata_vector(url: str, app_token: str = None):
     layer_name = sanitize_layer_name(Path(url).stem)
     return [(layer_name, gdf, DEFAULT_EPSG)]
 
+
 def export_spatial_layer(gdf, data_id, gpkg_path):
     """
     Write gdf to gpkg_path as layer=data_id.
@@ -193,6 +194,7 @@ def export_spatial_layer(gdf, data_id, gpkg_path):
 # ────────────────────────────────────────────────────────────────────────────────
 # ArcGIS helpers
 # ────────────────────────────────────────────────────────────────────────────────
+
 
 def fetch_arcgis_table(url: str):
     """
@@ -221,6 +223,7 @@ def fetch_arcgis_table(url: str):
     )
     layer_name = sanitize_layer_name(Path(url).stem)
     return [(layer_name, gdf, DEFAULT_EPSG)]
+
 
 def fetch_arcgis_vector(url: str):
     """
@@ -297,13 +300,13 @@ def fetch_arcgis_vector(url: str):
 # “Direct” helpers (no Socrata/ArcGIS)
 # ────────────────────────────────────────────────────────────────────────────────
 
+
 def fetch_geojson_direct(url: str):
     """
     Download a raw GeoJSON URL and return (layer_name, GeoDataFrame, source_epsg=4326).
     """
     resp = session.get(url)
     resp.raise_for_status()
-
     try:
         gdf = gpd.read_file(BytesIO(resp.content))
     except Exception:
@@ -312,6 +315,7 @@ def fetch_geojson_direct(url: str):
     gdf.set_crs(epsg=DEFAULT_EPSG, inplace=True)
     layer_name = sanitize_layer_name(Path(url).stem)
     return [(layer_name, gdf, DEFAULT_EPSG)]
+
 
 def fetch_csv_direct(url: str):
     """
@@ -333,6 +337,7 @@ def fetch_csv_direct(url: str):
     )
     layer_name = sanitize_layer_name(Path(url).stem)
     return [(layer_name, gdf, 4326)]
+
 
 def fetch_gpkg_layers(url: str):
     """
@@ -359,6 +364,7 @@ def fetch_gpkg_layers(url: str):
         results.append((ln, gdf, DEFAULT_EPSG))
 
     return results
+
 
 def fetch_gdb_or_zip(url: str):
     """
