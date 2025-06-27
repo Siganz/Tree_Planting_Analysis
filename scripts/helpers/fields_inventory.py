@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 from sqlalchemy import create_engine
 
-from helpers.table import (
+from table import (
     build_fields_inventory_gpkg,
     build_fields_inventory_postgis,
     write_inventory,
