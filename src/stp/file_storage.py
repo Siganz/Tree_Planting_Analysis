@@ -1,7 +1,6 @@
 """File-based GeoDataFrame helpers."""
 
 from pathlib import Path
-from typing import List
 
 import geopandas as gpd
 import pandas as pd
@@ -9,7 +8,8 @@ import pandas as pd
 LAYER_NAME_MAX_LENGTH = 60
 
 
-def get_geopackage_path(output_dir: Path, filename: str = "project_data.gpkg") -> Path:
+def get_geopackage_path(
+        output_dir: Path, filename: str = "project_data.gpkg") -> Path:
     """Return a fresh GeoPackage path under *output_dir*."""
     gpkg = Path(output_dir) / filename
     if gpkg.exists():

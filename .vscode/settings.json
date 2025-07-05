@@ -8,6 +8,10 @@
   // Load .env (for activating the venv in terminals)
   "python.envFile": "${workspaceFolder}/.env",
 
+  // Enable pytest and point it at your tests folder
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["tests"],
+
   // Debugger / terminals automatically see the right PATH
   "terminal.integrated.env.linux": {
     "VIRTUAL_ENV": "${workspaceFolder}/.venv",
