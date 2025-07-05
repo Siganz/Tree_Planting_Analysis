@@ -1,15 +1,24 @@
 {
-  // for the VS Code Python language server
-  "python.analysis.extraPaths": ["./src"],
+  // Use the venv’s interpreter for IntelliSense, linting, debugging
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
 
-  // for your debug / run configurations
-  "terminal.integrated.env.windows": {
-    "PYTHONPATH": "${workspaceFolder}/src"
-  },
+  // Let the LS find your src/ package
+  "python.analysis.extraPaths": ["${workspaceFolder}/src"],
+
+  // Load .env (for activating the venv in terminals)
+  "python.envFile": "${workspaceFolder}/.env",
+
+  // Debugger / terminals automatically see the right PATH
   "terminal.integrated.env.linux": {
-    "PYTHONPATH": "${workspaceFolder}/src"
+    "VIRTUAL_ENV": "${workspaceFolder}/.venv",
+    "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
+  },
+  "terminal.integrated.env.windows": {
+    "VIRTUAL_ENV": "${workspaceFolder}\\.venv",
+    "PATH": "${workspaceFolder}\\.venv\\Scripts;${env:PATH}"
   },
   "terminal.integrated.env.osx": {
-    "PYTHONPATH": "${workspaceFolder}/src"
+    "VIRTUAL_ENV": "${workspaceFolder}/.venv",
+    "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
   }
 }
