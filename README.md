@@ -27,6 +27,9 @@ conda activate stp
 pip install -r env/requirements.txt
 ```
 
+3. Copy `config/user.example.yaml` to `config/user.yaml` and
+   fill in your credentials. The `user.yaml` file is ignored by Git.
+
 ## Environment Setup
 
 This project uses a simple pip-based workflow for development and code review.
