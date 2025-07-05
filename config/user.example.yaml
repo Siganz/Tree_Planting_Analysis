@@ -1,14 +1,14 @@
 socrata:
-  app_token: ''
+  app_token: REPLACE_ME
 
 db:
   enabled: false
-  driver: ''
-  host: ''
-  port: ''
-  user: ''
-  password: ''
-  database: ''
+  driver: REPLACE_ME
+  host: REPLACE_ME
+  port: REPLACE_ME
+  user: REPLACE_ME
+  password: REPLACE_ME
+  database: REPLACE_ME
 
 data:
   output_epsg: 2263

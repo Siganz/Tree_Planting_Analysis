@@ -11,9 +11,8 @@ import json
 import logging
 from pathlib import Path
 
-# use get_setting (aliased to 'get') so both config.yaml overrides and constants.yaml
-# fallbacks work the same way
-from helpers.config import get_setting as get, get_project_setting
+# Read project configuration
+from stp.config_loader import get_setting, get_constant
 
 from helpers.download import (
     fetch_arcgis_table,
@@ -43,8 +42,8 @@ logger = logging.getLogger(__name__)
 FETCHERS = {
     ("socrata", "csv"): fetch_socrata_table,
     ("socrata", "json"): fetch_socrata_table,
-    ("socrata", "geojson"): fetch_socrata_vector,
-    ("socrata", "shapefile"): fetch_socrata_vector,
+    ("socrata", "geojson"): fetch_socrata_vector,  # noqa: F821
+    ("socrata", "shapefile"): fetch_socrata_vector,  # noqa: F821
 
     ("arcgis", "csv"): fetch_arcgis_table,
     ("arcgis", "json"): fetch_arcgis_table,
@@ -60,19 +59,17 @@ FETCHERS = {
 
 def setup_destinations():
     """Read config settings and prepare output destinations."""
-    socrata_token = get_project_setting("socrata.app_token")
-    db_cfg = get_project_setting("db", {})
+    socrata_token = get_setting("socrata.app_token", required=True)
+    db_cfg = get_setting("db", {})
 
     if db_cfg.get("enabled", False):
         db_engine = get_postgis_engine(db_cfg)
     else:
         db_engine = None
 
-    output_epsg = get_project_setting(
-        "output_epsg", get_constant("nysp_epsg")
-    )
-    out_shp_dir = Path(get_project_setting("output_shapefile"))
-    out_tbl_dir = Path(get_project_setting("output_tables"))
+    output_epsg = get_setting("output_epsg", get_constant("nysp_epsg"))
+    out_shp_dir = Path(get_setting("output_shapefile"))
+    out_tbl_dir = Path(get_setting("output_tables"))
     out_shp_dir.mkdir(parents=True, exist_ok=True)
     out_tbl_dir.mkdir(parents=True, exist_ok=True)
 
@@ -165,7 +162,7 @@ def process_layer(
                 source_epsg,
                 service_wkid,
             )
-            export_spatial_layer(gdf, clean_name, gpkg)
+            export_spatial_layer(gdf, clean_name, gpkg)  # noqa: F821
 
 
 def finalize(gpkg, metadata_csv, output_epsg):

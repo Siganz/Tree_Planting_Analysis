@@ -1,17 +1,16 @@
-import yaml
-import json
 from pathlib import Path
 import geopandas as gpd
 from sqlalchemy import create_engine
 from shapely.ops import unary_union
-from helpers.config import get_constant
+from stp.config_loader import get_setting, get_constant
 
 # 1) Paths and config
 base_dir = Path.cwd()
-config = yaml.safe_load(open(base_dir / "config" / "config.yaml"))
-db_cfg = config.get("db", {})
-output_epsg = config.get("output_epsg", get_constant("nysp_epsg", 2263))
-output_dir = Path(config.get("output_dir", "Data/shapefiles"))
+db_cfg = get_setting("db", {})
+output_epsg = get_setting(
+    "output_epsg", get_constant("nysp_epsg", 2263)
+)
+output_dir = Path(get_setting("output_shapefile", "Data/shapefiles"))
 output_dir.mkdir(parents=True, exist_ok=True)
 
 # 2) Setup storage mode
@@ -41,7 +40,9 @@ gdfs = []
 for layer in layer_ids:
     if engine:
         # Read from PostGIS
-        gdf = gpd.read_postgis(f"SELECT * FROM {layer}", engine, geom_col='geometry')
+        gdf = gpd.read_postgis(
+            f"SELECT * FROM {layer}", engine, geom_col="geometry"
+        )
         gdf.set_crs(epsg=output_epsg, inplace=True)
     else:
         # Read from GeoPackage
@@ -54,8 +55,15 @@ result_gdf = gpd.GeoDataFrame([{"geometry": all_union}], crs=output_epsg)
 
 # 6) Persist the result
 if engine:
-    result_gdf.to_postgis("political_boundaries", engine, if_exists="replace", index=False)
+    result_gdf.to_postgis(
+        "political_boundaries",
+        engine,
+        if_exists="replace",
+        index=False,
+    )
 else:
-    result_gdf.to_file(gpkg_path, layer="political_boundaries", driver="GPKG")
+    result_gdf.to_file(
+        gpkg_path, layer="political_boundaries", driver="GPKG"
+    )
 
 print("✅ political_boundaries created")
