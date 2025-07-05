@@ -3,11 +3,11 @@ __pycache__/
 *.py[cod]
 secret/
 scripts/garbage
-docs/
 secrets/
 replacements.txt
 zip.sh
 project.tar
+zip.py
 
 # ignore all real files in Data/table
 Data/table/*
