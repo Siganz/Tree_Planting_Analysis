@@ -15,52 +15,22 @@ from pathlib import Path
 # defaults.yaml fallbacks work the same way
 from stp.config_loader import get_setting as get, get_constant
 
-from helpers.download import (
-    fetch_arcgis_table,
-    fetch_arcgis_vector,
-    fetch_csv_direct,
-    fetch_gdb_or_zip,
-    fetch_geojson_direct,
-    fetch_gpkg_layers,
-    dispatch_socrata_table as fetch_socrata_table
-)
+from stp.fetchers import fetch_arcgis_vector
 
-from helpers.storage import (
+from stp.storage.file_storage import (
     get_geopackage_path,
     get_postgis_engine,
     reproject_all_layers,
     sanitize_layer_name,
+    export_spatial_layer,
 )
-from helpers.table import (
+from stp.table import (
     record_layer_metadata_csv,
     record_layer_metadata_db,
 )
+from stp.scripts.download_utils import FETCHERS
 
 logger = logging.getLogger(__name__)
-
-
-def export_spatial_layer(gdf, layer_name, gpkg_path):
-    """Write *gdf* to *gpkg_path* under *layer_name*."""
-    gdf.to_file(gpkg_path, layer=layer_name, driver="GPKG")
-
-
-# Dispatch map: (source_type, format) → fetch function
-FETCHERS = {
-    ("socrata", "csv"): fetch_socrata_table,
-    ("socrata", "json"): fetch_socrata_table,
-    ("socrata", "geojson"): fetch_socrata_table,
-    ("socrata", "shapefile"): fetch_socrata_table,
-
-    ("arcgis", "csv"): fetch_arcgis_table,
-    ("arcgis", "json"): fetch_arcgis_table,
-    ("arcgis", "geojson"): fetch_arcgis_vector,
-    ("arcgis", "shapefile"): fetch_arcgis_vector,
-
-    (None, "csv"): fetch_csv_direct,
-    (None, "geojson"): fetch_geojson_direct,
-    (None, "shapefile"): fetch_gdb_or_zip,
-    (None, "gpkg"): fetch_gpkg_layers,
-}
 
 
 def setup_destinations():
@@ -100,7 +70,7 @@ def setup_destinations():
 
 def load_layer_list():
     """Load the list of layers to fetch from the JSON registry."""
-    data_sources = Path("config") / "data_sources.json"
+    data_sources = Path("config") / "sources.json"
     with open(data_sources, encoding="utf-8") as f:
         return json.load(f)
 
@@ -168,7 +138,7 @@ def process_layer(
                 source_epsg,
                 service_wkid,
             )
-            export_spatial_layer(gdf, clean_name, gpkg)  # noqa: F821
+            export_spatial_layer(gdf, clean_name, gpkg)
 
 
 def finalize(gpkg, metadata_csv, output_epsg):
@@ -202,4 +172,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

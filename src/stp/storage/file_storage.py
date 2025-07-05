@@ -5,6 +5,13 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
+__all__ = [
+    "get_geopackage_path",
+    "sanitize_layer_name",
+    "export_spatial_layer",
+    "reproject_all_layers",
+]
+
 LAYER_NAME_MAX_LENGTH = 60
 
 
@@ -27,6 +34,12 @@ def sanitize_layer_name(name: str) -> str:
     if safe and safe[0].isdigit():
         safe = "_" + safe
     return safe[:LAYER_NAME_MAX_LENGTH]
+
+
+def export_spatial_layer(gdf: gpd.GeoDataFrame, layer_name: str,
+                         gpkg_path: Path) -> None:
+    """Write ``gdf`` to ``gpkg_path`` under ``layer_name``."""
+    gdf.to_file(gpkg_path, layer=layer_name, driver="GPKG")
 
 
 def reproject_all_layers(
