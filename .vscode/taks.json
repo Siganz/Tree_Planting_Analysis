@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "run download script",
+      "type": "shell",
+      "command": "python bin/download_data",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always"
+      }
+    }
+  ]
+}

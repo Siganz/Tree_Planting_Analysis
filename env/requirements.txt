@@ -1,20 +1,19 @@
+# Data & geo
 pandas
-geopandas        # pure-Python wheel
+geopandas
+fiona
+shapely
+pyproj
 requests
-shapely          # binary wheel available
-pyproj           # binary wheel available
-jupyterlab
-matplotlib
+
+# Database & I/O
 sqlalchemy
+PyYAML
+
+# Code style & linting
 black
 flake8
 isort
+
+# Testing
 pytest
-PyYAML
-fiona
-requests
-zipfile
-tempfile
-shutil
-pathlib
-BytesIO

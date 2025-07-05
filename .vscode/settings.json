@@ -1,0 +1,15 @@
+{
+  // for the VS Code Python language server
+  "python.analysis.extraPaths": ["./src"],
+
+  // for your debug / run configurations
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}/src"
+  },
+  "terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}/src"
+  },
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}/src"
+  }
+}
