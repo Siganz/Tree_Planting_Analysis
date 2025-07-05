@@ -7,7 +7,7 @@ docs/
 secrets/
 replacements.txt
 zip.sh
-project.zip
+project.tar
 
 # ignore all real files in Data/table
 Data/table/*
@@ -21,3 +21,5 @@ Data/gpkg/*
 
 # Ignore data junk
 *.log
+*.tar
+*.zip
