@@ -9,7 +9,8 @@ LAYER_NAME_MAX_LENGTH = 60
 
 
 def get_geopackage_path(
-        output_dir: Path, filename: str = "project_data.gpkg") -> Path:
+    output_dir: Path, filename: str = "project_data.gpkg"
+) -> Path:
     """Return a fresh GeoPackage path under *output_dir*."""
     gpkg = Path(output_dir) / filename
     if gpkg.exists():
@@ -29,9 +30,7 @@ def sanitize_layer_name(name: str) -> str:
 
 
 def reproject_all_layers(
-    gpkg_path: Path,
-    metadata_csv: Path,
-    target_epsg: int,
+    gpkg_path: Path, metadata_csv: Path, target_epsg: int
 ) -> None:
     """Reproject each layer in the GeoPackage in place."""
     meta = pd.read_csv(metadata_csv)
