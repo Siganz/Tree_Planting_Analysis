@@ -1,10 +1,13 @@
-from pathlib import Path
-from sqlalchemy import text
-from datetime import datetime
+"""
+Hello
+"""
 import csv
+from datetime import datetime
+from pathlib import Path
+
 import fiona
 import pandas as pd
-import geopandas as gpd
+from sqlalchemy import text
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Metadata Recording Helpers
@@ -13,9 +16,9 @@ import geopandas as gpd
 
 def record_layer_metadata_db(engine, layer_id: str, url: str, source_epsg: int, service_wkid: int = None):
     """
-    Inserts (layer_id, source_url, source_epsg, service_wkid, downloaded_at) into
-    a PostGIS table named 'layers_inventory'. If the row with same layer_id already
-    exists, does nothing.
+    Inserts (layer_id, source_url, source_epsg, service_wkid, downloaded_at) 
+    into a PostGIS table named 'layers_inventory'. 
+    If the row with same layer_id already exists, does nothing.
     Assumes the table has columns (layer_id TEXT PRIMARY KEY, source_url TEXT,
     source_epsg INT, service_wkid INT, downloaded_at TIMESTAMP).
     """
@@ -24,7 +27,8 @@ def record_layer_metadata_db(engine, layer_id: str, url: str, source_epsg: int, 
 
     stmt = text(
         """
-        INSERT INTO layers_inventory (layer_id, source_url, source_epsg, service_wkid, downloaded_at)
+        INSERT INTO layers_inventory (layer_id, source_url, source_epsg,
+        service_wkid, downloaded_at)
         VALUES (:layer_id, :url, :epsg, :service_wkid, NOW())
         ON CONFLICT (layer_id) DO NOTHING;
         """
@@ -66,7 +70,8 @@ def record_layer_metadata_csv(csv_path: Path, layer_name: str, url: str,
 
 def build_fields_inventory_gpkg(gpkg_path: Path) -> pd.DataFrame:
     """
-    Returns a DataFrame with columns [layer_name, field_name, field_type] for every layer in the GPKG.
+    Returns a DataFrame with columns [layer_name, field_name, field_type]
+    or every layer in the GPKG.
     """
     rows = []
     for layer in fiona.listlayers(str(gpkg_path)):
@@ -82,7 +87,8 @@ def build_fields_inventory_gpkg(gpkg_path: Path) -> pd.DataFrame:
 
 def build_fields_inventory_postgis(engine, schema: str = "public") -> pd.DataFrame:
     """
-    Returns a DataFrame with [layer_name, field_name, field_type] for every table in PostGIS (public schema by default).
+    Returns a DataFrame with [layer_name, field_name, field_type] 
+    for every table in PostGIS (public schema by default).
     """
     sql = text(f"""
         SELECT

@@ -7,7 +7,8 @@ import requests
 _session = requests.Session()
 
 
-def fetch_bytes(url: str, *, session: Optional[requests.Session] = None) -> bytes:
+def fetch_bytes(
+        url: str, *, session: Optional[requests.Session] = None) -> bytes:
     """Return response content for GET request."""
     sess = session or _session
     resp = sess.get(url)

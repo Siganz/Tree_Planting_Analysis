@@ -1,8 +1,13 @@
+"""
+tests csv
+"""
 import geopandas as gpd
+from pytest import MonkeyPatch
 import stp.fetchers.csv as csv_f
 
 
-def test_fetch_csv_direct(monkeypatch):
+def test_fetch_csv_direct(monkeypatch: MonkeyPatch):
+    """Verify fetch_csv_direct returns [] when CSV lacks lat/lon cols."""
     csv_data = b"latitude,longitude\n1,2\n"
 
     def fake_bytes(url):
