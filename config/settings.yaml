@@ -1,0 +1,20 @@
+socrata:
+  app_token: ''
+
+db:
+  enabled: false
+  driver: ''
+  host: ''
+  port: ''
+  user: ''
+  password: ''
+  database: ''
+
+data:
+  output_epsg: 2263
+  output_shapefile: Data/shapefiles
+  output_tables: Data/tables
+
+curb:
+  extension_distance: 7
+  buffer_width: 15

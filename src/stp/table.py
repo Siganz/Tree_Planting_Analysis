@@ -10,6 +10,7 @@ import geopandas as gpd
 # Metadata Recording Helpers
 # ────────────────────────────────────────────────────────────────────────────────
 
+
 def record_layer_metadata_db(engine, layer_id: str, url: str, source_epsg: int, service_wkid: int = None):
     """
     Inserts (layer_id, source_url, source_epsg, service_wkid, downloaded_at) into
@@ -34,6 +35,7 @@ def record_layer_metadata_db(engine, layer_id: str, url: str, source_epsg: int, 
         "epsg":     source_epsg,
         "service_wkid": service_wkid
     })
+
 
 def record_layer_metadata_csv(csv_path: Path, layer_name: str, url: str,
                               source_epsg: int, service_wkid: int = None):
@@ -61,6 +63,7 @@ def record_layer_metadata_csv(csv_path: Path, layer_name: str, url: str,
             datetime.utcnow().isoformat(),
         ])
 
+
 def build_fields_inventory_gpkg(gpkg_path: Path) -> pd.DataFrame:
     """
     Returns a DataFrame with columns [layer_name, field_name, field_type] for every layer in the GPKG.
@@ -75,6 +78,7 @@ def build_fields_inventory_gpkg(gpkg_path: Path) -> pd.DataFrame:
                     "field_type": fld_type
                 })
     return pd.DataFrame(rows)
+
 
 def build_fields_inventory_postgis(engine, schema: str = "public") -> pd.DataFrame:
     """
@@ -91,6 +95,7 @@ def build_fields_inventory_postgis(engine, schema: str = "public") -> pd.DataFra
     """)
     df = pd.read_sql(sql, engine, params={"schema": schema})
     return df
+
 
 def write_inventory(df: pd.DataFrame, out_csv: Path):
     """

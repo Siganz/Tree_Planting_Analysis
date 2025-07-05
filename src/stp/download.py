@@ -1,240 +1,283 @@
+"""
+download.py
+
+This module provides a unified interface for downloading,
+parsing, and convertingspatial datasets into GeoDataFrames.
+It supports multiple source formats including:
+
+- Socrata API endpoints (both table and vector formats)
+- ArcGIS REST services (tables and paged feature layers)
+- Direct GeoJSON, CSV, GPKG, and zipped FileGDB/Shapefile URLs
+
+All returned data is normalized to use EPSG:4326 unless otherwise specified.
+Each fetch function returns a list of standardized tuples:
+    (layer_name, GeoDataFrame, source_epsg[, native_wkid])
+
+Common use cases include:
+- Preprocessing open spatial data
+- Pulling geodata from public endpoints (NYC Open Data, ArcGIS, etc.)
+- Converting multi-layer sources into consistent GeoDataFrames
+
+Constants like default EPSG codes and record limits are injected from a
+`constants.yaml` file via the `get_constant()` helper.
+
+Dependencies: geopandas, pandas, shapely, requests, fiona
+"""
+
 import shutil
 import tempfile
 import zipfile
 from io import BytesIO
 from pathlib import Path
+from typing import Optional
 
 import fiona
 import geopandas as gpd
 import pandas as pd
 import requests
-from config import get_constant
+from config import get_setting
 from shapely.geometry import Point
 from storage import sanitize_layer_name
 
-DEFAULT_EPSG = get_constant("default_epsg", 4326)
-NYSP_EPSG = get_constant("nysp_epsg", 2263)
-SOCRATA_LIMIT = get_constant("socrata_limit", 50000)
-ARCGIS_DEFAULT_MAX_RECORDS = get_constant("arcgis_default_max_records", 1000)
+DEFAULT_EPSG = get_setting('default_epsg')
+NYSP_EPSG = get_setting('nysp_epsg')
+SOCRATA_LIMIT = get_setting('socrata_limit')
+ARCGIS_DEFAULT_MAX_RECORDS = get_setting(
+    'arcgis_default_max_records'
+)
 
 session = requests.Session()
+
+
+def fetch_layer(
+    url: str,
+    source_type: Optional[str],
+    fmt: str,
+    socrata_token: Optional[str] = None
+) -> list[tuple]:
+    """
+    Dispatch to the correct fetcher based on source_type and fmt.
+
+    Args:
+      url: endpoint URL or file path
+      source_type: 'socrata', 'arcgis', or None
+      fmt: 'csv', 'json', 'geojson', 'shapefile', or 'gpkg'
+      socrata_token: only used when source_type == 'socrata'
+
+    Returns:
+      list of tuples (raw_name, gdf, source_epsg, service_wkid)
+    """
+    # map (stype, fmt) → fetch fn
+    # inside helpers/download.py (or wherever you keep your FETCHERS)
+    fetchers = {
+        # everything Socrata → dispatch_socrata_table
+        ('socrata', 'csv'): dispatch_socrata_table,
+        ('socrata', 'json'): dispatch_socrata_table,
+        ('socrata', 'geojson'): dispatch_socrata_table,
+        ('socrata', 'shapefile'): dispatch_socrata_table,
+
+        # ArcGIS stays the same
+        ('arcgis', 'csv'): fetch_arcgis_table,
+        ('arcgis', 'json'): fetch_arcgis_table,
+        ('arcgis', 'geojson'): fetch_arcgis_vector,
+        ('arcgis', 'shapefile'): fetch_arcgis_vector,
+
+        # direct‐URL sources
+        (None, 'csv'): fetch_csv_direct,
+        (None, 'geojson'): fetch_geojson_direct,
+        (None, 'shapefile'): fetch_gdb_or_zip,
+        (None, 'gpkg'): fetch_gpkg_layers,
+    }
+
+    key = (source_type, fmt)
+    fn = fetchers.get(key)
+    if not fn:
+        raise ValueError(f"No fetcher for source_type={source_type!r}, fmt={fmt!r}")
+
+    # call with the right signature
+    if source_type == 'socrata':
+        raw = fn(url, app_token=socrata_token)
+        # unify to four‐tuple
+        return [(n, g, eps, None) for n, g, eps in raw]
+
+    if source_type == 'arcgis':
+        raw = fn(url)  # e.g. [(None, gdf, epsg, wkid), ...]
+        return raw  # leave the None values intact
+
+    # direct fetchers all return (layer_name, gdf, epsg)
+    raw = fn(url)
+    return [(n, g, eps, None) for n, g, eps in raw]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Socrata helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def fetch_socrata_table(url: str, app_token: str = None):
+def dispatch_socrata_table(url: str, app_token: str = None):
+    """Download a Socrata table endpoint and return any point geometry.
+
+    The function attempts, in order:
+    1. 'latitude'/'longitude' columns.
+    2. GeoJSON-style 'location' dict.
+    3. WKT 'geometry' string.
+    4. Projected X/Y columns.
+
+    Args:
+        url (str): URL to a Socrata table endpoint.
+        app_token (str, optional): Socrata App Token.
+
+    Returns:
+        list[tuple]: [(layer_name, GeoDataFrame, source_epsg)]
+        or [] if no valid points.
     """
-    Fetch a Socrata table (JSON) endpoint and return a list of one tuple:
-      [(layer_name, GeoDataFrame, source_epsg)].
-
-    This function will attempt to find geometry in the following order:
-     1) Columns named "latitude" & "longitude" (assumed EPSG:4326).
-     2) A GeoJSON-style "location" field:
-        {"type": "Point", "coordinates": [lon, lat]}.
-     3) A WKT "geometry" field: "POINT(lon lat)".
-     4) Projected X/Y fields (e.g. "sign_x_coord" & "sign_y_coord")—
-        assumed EPSG:2263.
-
-    Returns [] if no geometry can be found.
-    """
-    headers = {}
-    if app_token:
-        headers["X-App-Token"] = app_token
-
-    # If this is the hn5i-inap endpoint without a $limit,
-    # add one to pull all rows
+    headers = {'X-App-Token': app_token} if app_token else {}
     if (
-        url.lower().endswith(".json")
-        and "resource/hn5i-inap.json" in url.lower()
+        url.lower().endswith('.json')
+        and 'resource/hn5i-inap.json' in url.lower()
     ):
-        if "?" in url:
-            url = url + f"&$limit={SOCRATA_LIMIT}"
-        else:
-            url = url + f"?$limit={SOCRATA_LIMIT}"
-
+        join_char = '&' if '?' in url else '?'
+        url = f'{url}{join_char}$limit={SOCRATA_LIMIT}'
     resp = session.get(url, headers=headers)
     resp.raise_for_status()
-
-    data = None
     try:
         data = resp.json()
-    except ValueError:
-        # If it’s not JSON, try CSV fallback
-        # We already have the response content, so parse it directly
-        df = pd.read_csv(BytesIO(resp.content))
-    else:
         df = pd.DataFrame(data)
-
+    except ValueError:
+        df = pd.read_csv(BytesIO(resp.content))
     if df.empty:
         return []
-
-    # CASE 1: explicit "latitude" & "longitude"
-    if {"latitude", "longitude"}.issubset(df.columns):
-        try:
-            df["latitude"] = df["latitude"].astype(float)
-            df["longitude"] = df["longitude"].astype(float)
-            geom = [Point(xy) for xy in zip(df.longitude, df.latitude)]
-            gdf = gpd.GeoDataFrame(
-                df.drop(columns=["latitude", "longitude"]),
-                geometry=geom,
-                crs=f"EPSG:{DEFAULT_EPSG}"
-            )
-            layer_name = sanitize_layer_name(Path(url).stem)
-            return [(layer_name, gdf, DEFAULT_EPSG)]
-        except Exception:
-            pass  # If parsing fails, fall through to next case
-
-    # CASE 2: GeoJSON-style "location" field
-    if "location" in df.columns:
-        coords = []
-        rows = []
-        for record in df.to_dict(orient="records"):
-            loc = record.get("location")
-            if isinstance(loc, dict) and loc.get("type") == "Point":
-                try:
-                    lon, lat = loc["coordinates"]
-                    lon, lat = float(lon), float(lat)
-                    coords.append(Point(lon, lat))
-                    # Copy everything except "location" into the attribute dict
-                    rec_copy = {
-                        k: v
-                        for k, v in record.items()
-                        if k != "location"
-                    }
-                    rows.append(rec_copy)
-                except Exception:
-                    continue
-        if coords:
-            gdf = gpd.GeoDataFrame(
-                rows,
-                geometry=coords,
-                crs=f"EPSG:{DEFAULT_EPSG}",
-            )
-            layer_name = sanitize_layer_name(Path(url).stem)
-            return [(layer_name, gdf, DEFAULT_EPSG)]
-
-    # CASE 3: WKT "geometry" field
-    if "geometry" in df.columns:
-        coords = []
-        rows = []
-        for record in df.to_dict(orient="records"):
-            wkt = record.get("geometry")
-            if isinstance(wkt, str) and wkt.startswith("POINT"):
-                try:
-                    # e.g. "POINT(-73.8165 40.7162)"
-                    inside = wkt[len("POINT(") : -1].split()
-                    lon, lat = float(inside[0]), float(inside[1])
-                    coords.append(Point(lon, lat))
-                    # Copy everything except "geometry"
-                    rec_copy = {
-                        k: v
-                        for k, v in record.items()
-                        if k != "geometry"
-                    }
-                    rows.append(rec_copy)
-                except Exception:
-                    continue
-        if coords:
-            gdf = gpd.GeoDataFrame(
-                rows,
-                geometry=coords,
-                crs=f"EPSG:{DEFAULT_EPSG}",
-            )
-            layer_name = sanitize_layer_name(Path(url).stem)
-            return [(layer_name, gdf, DEFAULT_EPSG)]
-
-    # CASE 4: projected X/Y fields (e.g. "sign_x_coord" & "sign_y_coord")
-    # Here we assume EPSG:2263 if both fields exist.
-    x_field = None
-    y_field = None
-    # You can customize this to match any pair of fields your tables use.
-    if "sign_x_coord" in df.columns and "sign_y_coord" in df.columns:
-        x_field, y_field = "sign_x_coord", "sign_y_coord"
-        source_epsg = NYSP_EPSG
-    # You could add more pairs here if other tables use different column names.
-
-    if x_field and y_field:
-        coords = []
-        rows = []
-        for record in df.to_dict(orient="records"):
-            try:
-                x = float(record.get(x_field))
-                y = float(record.get(y_field))
-                coords.append(Point(x, y))
-                rec_copy = {
-                    k: v
-                    for k, v in record.items()
-                    if k not in (x_field, y_field)
-                }
-                rows.append(rec_copy)
-            except Exception:
-                continue
-        if coords:
-            gdf = gpd.GeoDataFrame(
-                rows,
-                geometry=coords,
-                crs=f"EPSG:{source_epsg}",
-            )
-            layer_name = sanitize_layer_name(Path(url).stem)
-            return [(layer_name, gdf, source_epsg)]
-
-    # If we reach here, no geometry was found
+    layer_name = sanitize_layer_name(Path(url).stem)
+    if {'latitude', 'longitude'}.issubset(df.columns):
+        return make_gdf_from_latlon(df, layer_name)
+    if 'location' in df.columns:
+        return make_gdf_from_geojson_field(df, layer_name)
+    if 'geometry' in df.columns:
+        return make_gdf_from_wkt(df, layer_name)
+    if {'sign_x_coord', 'sign_y_coord'}.issubset(df.columns):
+        return make_gdf_from_projected(
+            df,
+            layer_name,
+            'sign_x_coord',
+            'sign_y_coord',
+            NYSP_EPSG,
+        )
     return []
 
 
-def fetch_socrata_vector(url: str, app_token: str = None):
-    """
-    Fetch a Socrata "vector" (GeoJSON) endpoint and return a GeoDataFrame
-    in EPSG:4326.
+def make_gdf_from_latlon(df, layer_name):
+    """Build a GeoDataFrame from 'latitude' & 'longitude' columns.
 
-    Request parameters:
-      f=geojson, $limit=50000.
+    Args:
+        df (pd.DataFrame): DataFrame with 'latitude' and 'longitude'.
+        layer_name (str): Sanitized layer name for metadata.
 
     Returns:
-      [(layer_name, GeoDataFrame, source_epsg=4326)]
+        list[tuple]: [(layer_name, GeoDataFrame, DEFAULT_EPSG)]
+        or [] if conversion fails.
     """
-    headers = {}
-    if app_token:
-        headers["X-App-Token"] = app_token
-
-    # If the URL already ends with ".geojson", just add $limit;
-    # otherwise force f=geojson
-    if url.lower().endswith(".geojson"):
-        resp = session.get(
-            url,
-            headers=headers,
-            params={"$limit": SOCRATA_LIMIT},
-        )
-    else:
-        resp = session.get(
-            url,
-            headers=headers,
-            params={
-                "$limit": SOCRATA_LIMIT,
-                "f": "geojson",
-            },
-        )
-    resp.raise_for_status()
-
     try:
-        gdf = gpd.read_file(BytesIO(resp.content))
-    except Exception:
+        df['latitude'] = df['latitude'].astype(float)
+        df['longitude'] = df['longitude'].astype(float)
+        pts = gpd.points_from_xy(df.longitude, df.latitude)
+        gdf = gpd.GeoDataFrame(
+            df.drop(columns=['latitude', 'longitude']),
+            geometry=pts,
+            crs=f'EPSG:{DEFAULT_EPSG}',
+        )
+        return [(layer_name, gdf, DEFAULT_EPSG)]
+    except (ValueError, TypeError):
         return []
 
-    # GeoPandas might not auto‐assign a CRS, so force WGS84
-    gdf.set_crs(epsg=DEFAULT_EPSG, inplace=True)
 
-    layer_name = sanitize_layer_name(Path(url).stem)
-    return [(layer_name, gdf, DEFAULT_EPSG)]
+def make_gdf_from_geojson_field(df, layer_name):
+    """Build a GeoDataFrame from a GeoJSON-style 'location' field.
 
+    Args:
+        df (pd.DataFrame): DataFrame with a 'location' column.
+        layer_name (str): Sanitized layer name for metadata.
 
-def export_spatial_layer(gdf, data_id, gpkg_path):
+    Returns:
+        list[tuple]: [(layer_name, GeoDataFrame, DEFAULT_EPSG)]
+        or [] if no valid points.
     """
-    Write gdf to gpkg_path as layer=data_id.
+    coords = []
+    rows = []
+    for rec in df.to_dict(orient='records'):
+        loc = rec.get('location')
+        if isinstance(loc, dict) and loc.get('type') == 'Point':
+            try:
+                lon, lat = map(float, loc['coordinates'])
+            except (ValueError, TypeError):
+                continue
+            coords.append(Point(lon, lat))
+            rows.append({k: v for k, v in rec.items() if k != 'location'})
+    if coords:
+        gdf = gpd.GeoDataFrame(rows, geometry=coords,
+                               crs=f'EPSG:{DEFAULT_EPSG}')
+        return [(layer_name, gdf, DEFAULT_EPSG)]
+    return []
+
+
+def make_gdf_from_wkt(df, layer_name):
+    """Build a GeoDataFrame from a WKT 'geometry' text field.
+
+    Args:
+        df (pd.DataFrame): DataFrame with a 'geometry' column.
+        layer_name (str): Sanitized layer name for metadata.
+
+    Returns:
+        list[tuple]: [(layer_name, GeoDataFrame, DEFAULT_EPSG)]
+        or [] if no valid points.
     """
-    gdf.to_file(gpkg_path, layer=data_id, driver="GPKG")
+    coords = []
+    rows = []
+    for rec in df.to_dict(orient='records'):
+        wkt = rec.get('geometry')
+        if isinstance(wkt, str) and wkt.startswith('POINT'):
+            try:
+                lon, lat = map(float, wkt[len('POINT('):-1].split())
+            except (ValueError, TypeError):
+                continue
+            coords.append(Point(lon, lat))
+            rows.append({k: v for k, v in rec.items()
+                         if k != 'geometry'})
+    if coords:
+        gdf = gpd.GeoDataFrame(rows, geometry=coords,
+                               crs=f'EPSG:{DEFAULT_EPSG}')
+        return [(layer_name, gdf, DEFAULT_EPSG)]
+    return []
+
+
+def make_gdf_from_projected(df, layer_name, x_col, y_col, epsg):
+    """Build a GeoDataFrame from projected X/Y coordinate columns.
+
+    Args:
+        df (pd.DataFrame): DataFrame with x_col and y_col fields.
+        layer_name (str): Sanitized layer name for metadata.
+        x_col (str): Name of the easting field.
+        y_col (str): Name of the northing field.
+        epsg (int): EPSG code of the projected CRS.
+
+    Returns:
+        list[tuple]: [(layer_name, GeoDataFrame, epsg)]
+        or [] if no valid points.
+    """
+    coords = []
+    rows = []
+    for rec in df.to_dict(orient='records'):
+        try:
+            x = float(rec.get(x_col))
+            y = float(rec.get(y_col))
+        except (ValueError, TypeError):
+            continue
+        coords.append(Point(x, y))
+        rows.append({k: v for k, v in rec.items()
+                     if k not in (x_col, y_col)})
+    if coords:
+        gdf = gpd.GeoDataFrame(rows, geometry=coords,
+                               crs=f'EPSG:{epsg}')
+        return [(layer_name, gdf, epsg)]
+    return []
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ArcGIS helpers
@@ -338,8 +381,8 @@ def fetch_arcgis_vector(url: str):
     clean_parts = []
     for df in all_parts:
         if df.empty:
-            continue    
-        # drop columns that are NA 
+            continue
+        # drop columns that are NA
         df = df.dropna(axis=1, how="all")
         clean_parts.append(df)
 

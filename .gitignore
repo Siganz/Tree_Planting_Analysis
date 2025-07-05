@@ -5,7 +5,6 @@ secret/
 scripts/garbage
 docs/
 secrets/
-config/config.yaml
 replacements.txt
 zip.sh
 project.zip

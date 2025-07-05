@@ -4,9 +4,9 @@ from typing import Optional
 
 import geopandas as gpd
 import pandas as pd
-from config import get_constant
+from config import get_setting
 
-MIN_DBH = get_constant("min_dbh", 0.01)
+MIN_DBH = get_setting("min_dbh")
 
 
 def clean_trees_basic(

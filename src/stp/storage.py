@@ -1,8 +1,11 @@
+"""
+Hello world
+"""
 from pathlib import Path
 from sqlalchemy import create_engine
 import pandas as pd
 import geopandas as gpd
-from helpers.config import get_constant
+from config import get_constant
 
 LAYER_NAME_MAX_LENGTH = get_constant("layer_name_max_length", 60)
 DEFAULT_TARGET_EPSG = get_constant("nysp_epsg", 2263)
@@ -11,19 +14,21 @@ DEFAULT_TARGET_EPSG = get_constant("nysp_epsg", 2263)
 # Database / Engine Helpers
 # ────────────────────────────────────────────────────────────────────────────────
 
+
 def get_postgis_engine(db_config: dict):
     """
-    Returns a SQLAlchemy engine if db_config['enabled'] is True and all required
-    fields (driver, user, password, host, port, database) exist. Otherwise returns None.
+    Returns a SQLAlchemy engine if db_config['enabled']
+    is True and all required fields (driver, user, password,
+    host, port, database) exist. Otherwise returns None.
     """
     if not db_config.get("enabled", False):
         return None
 
-    driver   = db_config.get("driver")
-    user     = db_config.get("user")
+    driver = db_config.get("driver")
+    user = db_config.get("user")
     password = db_config.get("password")
-    host     = db_config.get("host")
-    port     = db_config.get("port")
+    host = db_config.get("host")
+    port = db_config.get("port")
     database = db_config.get("database")
 
     if not all((driver, user, password, host, port, database)):
@@ -32,10 +37,12 @@ def get_postgis_engine(db_config: dict):
     url = f"{driver}://{user}:{password}@{host}:{port}/{database}"
     return create_engine(url)
 
+
 def get_geopackage_path(output_dir: Path, filename: str = "project_data.gpkg") -> Path:
     """
     Returns a Path to a fresh GeoPackage file. If an existing file is present,
-    attempts to delete it first. If deletion fails (e.g. file is locked), warns and continues.
+    attempts to delete it first. If deletion fails (e.g. file is locked),
+    warns and continues.
     """
     gpkg = Path(output_dir) / filename
     if gpkg.exists():
@@ -50,6 +57,7 @@ def get_geopackage_path(output_dir: Path, filename: str = "project_data.gpkg") -
 # Utility / Geometry Helpers
 # ────────────────────────────────────────────────────────────────────────────────
 
+
 def sanitize_layer_name(name: str) -> str:
     """
     - Replace any non-alphanumeric or underscore with “_”
@@ -61,8 +69,11 @@ def sanitize_layer_name(name: str) -> str:
         safe = "_" + safe
     return safe[:LAYER_NAME_MAX_LENGTH]
 
-#Need to include x/y coordinates for csv
-def reproject_all_layers(gpkg_path: Path, metadata_csv: Path, target_epsg: int = DEFAULT_TARGET_EPSG):
+
+# Need to include x/y coordinates for csv
+def reproject_all_layers(gpkg_path: Path,
+                         metadata_csv: Path,
+                         target_epsg: int = DEFAULT_TARGET_EPSG):
     """
     Reads layers_inventory.csv to learn each layer’s original CRS (source_epsg)
     and, if available, service_wkid. Then:
@@ -70,7 +81,7 @@ def reproject_all_layers(gpkg_path: Path, metadata_csv: Path, target_epsg: int =
       2) Assign or confirm the GeoDataFrame’s CRS = source_epsg
       3) Reproject to target_epsg
       4) Overwrite the layer in the GPKG with the new CRS embedded
-    Prints a line for each layer, using service_wkid if provided (ArcGIS layers).
+    Prints a line for each layer, using service_wkid if provided.
     """
     meta = pd.read_csv(metadata_csv)
     for _, row in meta.iterrows():

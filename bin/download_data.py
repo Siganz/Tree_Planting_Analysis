@@ -11,18 +11,20 @@ import json
 import logging
 from pathlib import Path
 
-from helpers.config import get_constant, get_project_setting
+# use get_setting (aliased to 'get') so both config.yaml overrides and constants.yaml
+# fallbacks work the same way
+from helpers.config import get_setting as get, get_project_setting
+
 from helpers.download import (
-    export_spatial_layer,
     fetch_arcgis_table,
     fetch_arcgis_vector,
     fetch_csv_direct,
     fetch_gdb_or_zip,
     fetch_geojson_direct,
     fetch_gpkg_layers,
-    fetch_socrata_table,
-    fetch_socrata_vector,
+    dispatch_socrata_table as fetch_socrata_table
 )
+
 from helpers.storage import (
     get_geopackage_path,
     get_postgis_engine,
@@ -35,6 +37,7 @@ from helpers.table import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 # Dispatch map: (source_type, format) → fetch function
 FETCHERS = {
