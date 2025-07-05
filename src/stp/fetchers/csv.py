@@ -11,7 +11,7 @@ from pandas.errors import ParserError
 from shapely.geometry import Point
 
 from .. import http_client
-from ..file_storage import sanitize_layer_name
+from ..storage.file_storage import sanitize_layer_name
 from ..settings import DEFAULT_EPSG
 
 logger = logging.getLogger(__name__)

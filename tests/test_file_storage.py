@@ -1,4 +1,4 @@
-import stp.file_storage as fs
+import stp.storage.file_storage as fs
 
 
 def test_sanitize_layer_name():
