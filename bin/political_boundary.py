@@ -1,7 +1,11 @@
+"""
+tempp
+"""
 from pathlib import Path
 import geopandas as gpd
 from sqlalchemy import create_engine
 from shapely.ops import unary_union
+from stp.config_loader import get_setting, get_constant
 from stp.config_loader import get_setting, get_constant
 
 # 1) Paths and config
@@ -40,6 +44,9 @@ gdfs = []
 for layer in layer_ids:
     if engine:
         # Read from PostGIS
+        gdf = gpd.read_postgis(
+            f"SELECT * FROM {layer}", engine, geom_col="geometry"
+        )
         gdf = gpd.read_postgis(
             f"SELECT * FROM {layer}", engine, geom_col="geometry"
         )

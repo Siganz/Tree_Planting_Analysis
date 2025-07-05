@@ -168,7 +168,7 @@ def process_layer(
                 source_epsg,
                 service_wkid,
             )
-            export_spatial_layer(gdf, clean_name, gpkg)
+            export_spatial_layer(gdf, clean_name, gpkg)  # noqa: F821
 
 
 def finalize(gpkg, metadata_csv, output_epsg):
@@ -202,3 +202,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

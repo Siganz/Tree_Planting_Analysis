@@ -1,54 +1,73 @@
 # Street Tree Planting Analysis (STP)
 
-A collection of scripts for downloading and analyzing New York City street tree and related infrastructure data.
+Scripts and tools for downloading, processing, and analyzing New York City street tree and sidewalk data.
+
+---
 
 ## Table of Contents
 
-- [Installation](#installation)
-- [Environment Setup](#environment-setup)
-- [Folder Structure](#folder-structure)
-- [Contributing](#contributing)
-- [License](#license)
+* [Installation](#installation)
+* [Environment Setup](#environment-setup)
+* [Configuration](#configuration)
+* [Folder Structure](#folder-structure)
+* [Contributing](#contributing)
+* [License](#license)
+
+---
 
 ## Installation
 
-1. Clone the repository:
+1. **Clone the repository:**
 
-```bash
-git clone https://github.com/shawnganznyc/Street_Tree_Planting_Analysis.git
-cd Street_Tree_Planting_Analysis
-```
+   ```bash
+   git clone https://github.com/shawnganznyc/Street_Tree_Planting_Analysis.git
+   cd Street_Tree_Planting_Analysis
+   ```
 
-2. Create the Conda environment and install dependencies:
+2. **Install dependencies**
+pip install -r requirements.txt
 
-```bash
-conda env create -f env/environment.yml
-conda activate stp
-pip install -r env/requirements.txt
-```
+## Configuration
 
-## Environment Setup
+1. **Edit configuration files:**
 
-This project uses a simple pip-based workflow for development and code review.
+   * `config/defaults.yaml` — project-wide constants (safe to commit)
+   * `config/user.yaml` — user-specific secrets/overrides (do **NOT** commit)
 
-**To install the required developer tools, run:**
+2. **On first use:**
 
-pip install black flake8 isort pytest
+   * Copy `config/user.example.yaml` to `config/user.yaml` and fill in any required secrets (e.g. Socrata app token).
+   * Ensure `config/user.yaml` is listed in `.gitignore`.
+
+---
 
 ## Folder Structure
 
 ```
-config/   - Configuration templates and data source lists
-docs/     - Project notes and miscellaneous documentation
-env/      - Conda environment files and package requirements
-scripts/  - Main Python scripts and helper modules
-Data/     - Downloaded data (not tracked in version control)
+config/      - Configuration files (defaults, user secrets)
+src/stp/     - Main Python package (cleaning, fetchers, storage, etc.)
+Data/        - Downloaded/generated data (not tracked in version control)
+tests/       - Unit and integration tests
 ```
+
+---
 
 ## Contributing
 
-Pull requests and issues are welcome. Please open an issue to discuss your ideas before submitting a PR.
+Pull requests and issues are welcome. Please open an issue to discuss major changes before submitting a PR.
+
+---
 
 ## License
 
-This project is provided under an open-source license. See `LICENSE` (to be added) for details.
+This project is open-source. See `LICENSE` for details.
+
+---
+
+**Tip:**
+All user secrets and API keys go in `config/user.yaml` (never committed).
+Project settings and defaults live in `config/defaults.yaml`.
+
+---
+
+Let me know if you want any sections expanded or customized for your onboarding workflow.
