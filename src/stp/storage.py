@@ -1,14 +1,39 @@
 """
-Hello world
+storage.py — GeoDataFrame persistence & metadata helpers
+
+This module contains utilities to write GeoDataFrames out to PostGIS,
+GeoPackage files, and to reproject or inventory existing layers.
+
+Functions:
+
+  • get_postgis_engine(db_config: dict) → Optional[Engine]
+      Create a SQLAlchemy Engine if the `db` config is enabled and complete,
+      else return None.
+
+  • get_geopackage_path(output_dir: Path, filename: str = "project_data.gpkg")
+      Generate (and if existing, delete) a GeoPackage file path.
+
+  • sanitize_layer_name(name: str) → str
+      Clean a string to a valid layer name (alphanumeric + underscore,
+      no leading digit, truncated to max length).
+
+  • reproject_all_layers(
+      gpkg_path: Path,
+      metadata_csv: Path,
+      target_epsg: int = DEFAULT_TARGET_EPSG
+    )
+      Read a layers‐inventory CSV, reproject each layer in the GPKG to
+      `target_epsg`, and overwrite it in place.
 """
+
 from pathlib import Path
 from sqlalchemy import create_engine
 import pandas as pd
 import geopandas as gpd
-from .config import get_constant
+from .settings import get_setting
 
-LAYER_NAME_MAX_LENGTH = get_constant("layer_name_max_length", 60)
-DEFAULT_TARGET_EPSG = get_constant("nysp_epsg", 2263)
+LAYER_NAME_MAX_LENGTH = get_setting("layer_name_max_length")
+DEFAULT_TARGET_EPSG = get_setting("nysp_epsg")
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Database / Engine Helpers
@@ -38,7 +63,10 @@ def get_postgis_engine(db_config: dict):
     return create_engine(url)
 
 
-def get_geopackage_path(output_dir: Path, filename: str = "project_data.gpkg") -> Path:
+def get_geopackage_path(
+        output_dir: Path,
+        filename: str = "project_data.gpkg"
+        ) -> Path:
     """
     Returns a Path to a fresh GeoPackage file. If an existing file is present,
     attempts to delete it first. If deletion fails (e.g. file is locked),
@@ -48,9 +76,8 @@ def get_geopackage_path(output_dir: Path, filename: str = "project_data.gpkg") -
     if gpkg.exists():
         try:
             gpkg.unlink()
-        except Exception as e:
+        except PermissionError as e:
             print(f"⚠️ Could not delete existing GeoPackage '{gpkg}': {e}")
-            print("   Make sure it isn’t open in another program, then rerun if needed.")
     return gpkg
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -109,6 +136,9 @@ def reproject_all_layers(gpkg_path: Path,
 
         # 4) Print the reproject info
         if service_wkid:
-            print(f"Reprojected '{layer_name}': {service_wkid} → {target_epsg}")
+            print(
+                f"Reprojected '{layer_name}': "
+                f"{service_wkid} → {target_epsg}")
         else:
-            print(f"Reprojected '{layer_name}': {source_epsg} → {target_epsg}")
+            print(f"Reprojected '{layer_name}': "
+                  f"{source_epsg} → {target_epsg}")

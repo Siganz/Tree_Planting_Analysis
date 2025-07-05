@@ -1,31 +1,37 @@
 """
-download.py
+download.py — Unified fetchers for spatial datasets
 
-This module provides a unified interface for downloading,
-parsing, and convertingspatial datasets into GeoDataFrames.
-It supports multiple source formats including:
+This module provides functions to fetch and normalize spatial data
+from various sources into GeoDataFrames (always in EPSG:4326 unless
+otherwise specified). Supported sources:
 
-- Socrata API endpoints (both table and vector formats)
-- ArcGIS REST services (tables and paged feature layers)
-- Direct GeoJSON, CSV, GPKG, and zipped FileGDB/Shapefile URLs
+  • Socrata tables (JSON or CSV fallback), with point geometry auto‐detection
+  • Socrata GeoJSON “vector” endpoints (if needed)
+  • ArcGIS REST tables & feature layers (paged geoJSON)
+  • Direct GeoJSON, CSV, GeoPackage, zipped FileGDB/Shapefile URLs
 
-All returned data is normalized to use EPSG:4326 unless otherwise specified.
-Each fetch function returns a list of standardized tuples:
-    (layer_name, GeoDataFrame, source_epsg[, native_wkid])
+Each fetcher returns a list of tuples:
+    (layer_name: str, gdf: GeoDataFrame, source_epsg: int[, native_wkid: int])
 
-Common use cases include:
-- Preprocessing open spatial data
-- Pulling geodata from public endpoints (NYC Open Data, ArcGIS, etc.)
-- Converting multi-layer sources into consistent GeoDataFrames
-
-Constants like default EPSG codes and record limits are injected from a
-`constants.yaml` file via the `get_constant()` helper.
-
-Dependencies: geopandas, pandas, shapely, requests, fiona
+Helpers:
+  • dispatch_socrata_table
+  • make_gdf_from_latlon
+  • make_gdf_from_geojson_field
+  • make_gdf_from_wkt
+  • make_gdf_from_projected
+  • fetch_socrata_vector
+  • fetch_arcgis_table
+  • fetch_arcgis_vector
+  • fetch_geojson_direct
+  • fetch_csv_direct
+  • fetch_gpkg_layers
+  • fetch_gdb_or_zip
 """
+
 
 import shutil
 import tempfile
+from venv import logger
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -35,8 +41,12 @@ import fiona
 import geopandas as gpd
 import pandas as pd
 import requests
-from .config import get_setting
+
 from shapely.geometry import Point
+from fiona.errors import DriverError, FionaValueError
+from pandas.errors import ParserError
+
+from .settings import get_setting
 from .storage import sanitize_layer_name
 
 DEFAULT_EPSG = get_setting('default_epsg')
@@ -44,7 +54,7 @@ NYSP_EPSG = get_setting('nysp_epsg')
 SOCRATA_LIMIT = get_setting('socrata_limit')
 ARCGIS_DEFAULT_MAX_RECORDS = get_setting(
     'arcgis_default_max_records'
-)
+    )
 
 session = requests.Session()
 
@@ -70,11 +80,11 @@ def fetch_layer(
     # map (stype, fmt) → fetch fn
     # inside helpers/download.py (or wherever you keep your FETCHERS)
     fetchers = {
-        # everything Socrata → dispatch_socrata_table
-        ('socrata', 'csv'): dispatch_socrata_table,
-        ('socrata', 'json'): dispatch_socrata_table,
-        ('socrata', 'geojson'): dispatch_socrata_table,
-        ('socrata', 'shapefile'): dispatch_socrata_table,
+        # everything Socrata → fetch_socrata_table
+        ('socrata', 'csv'): fetch_socrata_table,
+        ('socrata', 'json'): fetch_socrata_table,
+        ('socrata', 'geojson'): fetch_socrata_table,
+        ('socrata', 'shapefile'): fetch_socrata_table,
 
         # ArcGIS stays the same
         ('arcgis', 'csv'): fetch_arcgis_table,
@@ -92,7 +102,10 @@ def fetch_layer(
     key = (source_type, fmt)
     fn = fetchers.get(key)
     if not fn:
-        raise ValueError(f"No fetcher for source_type={source_type!r}, fmt={fmt!r}")
+        # split the f-string into two shorter literals
+        raise ValueError(
+            f"No fetcher for source_type={source_type!r}, "
+            f"fmt={fmt!r}")
 
     # call with the right signature
     if source_type == 'socrata':
@@ -113,7 +126,7 @@ def fetch_layer(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def dispatch_socrata_table(url: str, app_token: str = None):
+def fetch_socrata_table(url: str, app_token: str = None):
     """Download a Socrata table endpoint and return any point geometry.
 
     The function attempts, in order:
@@ -315,83 +328,73 @@ def fetch_arcgis_table(url: str):
     return [(layer_name, gdf, DEFAULT_EPSG)]
 
 
-def fetch_arcgis_vector(url: str):
+def fetch_arcgis_vector(
+        url: str
+) -> list[tuple[str, gpd.GeoDataFrame, int, int]]:
     """
-    Fetch an ArcGIS FeatureServer "vector" endpoint in pages and return all
-    features.
+    Fetch all features from an ArcGIS FeatureServer vector endpoint.
 
-    Steps:
-      1) GET <url>?f=json to read service metadata
-         (esp. maxRecordCount, WKID).
-      2) Loop over resultOffset in increments of maxRecordCount,
-         pulling GeoJSON each time.
-      3) Concatenate all pages into one GeoDataFrame (in EPSG:4326).
+    Pages through the service using `resultOffset` until no more features
+    are returned. Always returns a single GeoDataFrame in EPSG:4326.
+
+    Args:
+        url (str): Base URL of the ArcGIS FeatureServer layer
+                   (e.g. 'https://.../FeatureServer/0').
 
     Returns:
-      [(None, gdf_all, 4326, native_wkid)].
+        List of one tuple:
+          [
+            (None, GeoDataFrame(all_features), DEFAULT_EPSG, native_wkid)
+          ]
+        or [] if no valid pages are found.
     """
-    # 1) Read service metadata & extract WKID + maxRecordCount
+    # 1) Read service metadata
     info = session.get(f"{url}?f=json").json()
     sr = info.get("spatialReference", {})
     native_wkid = sr.get("latestWkid") or sr.get("wkid") or DEFAULT_EPSG
 
     max_records = info.get("maxRecordCount", ARCGIS_DEFAULT_MAX_RECORDS)
     if not isinstance(max_records, int) or max_records < 1:
-        # fallback if service misbehaves
         max_records = ARCGIS_DEFAULT_MAX_RECORDS
 
-    # 2) Page through all features using resultOffset/resultRecordCount
-    all_parts = []  # list of GeoDataFrames for each page
+    # 2) Page through all features
+    parts: list[gpd.GeoDataFrame] = []
     offset = 0
-
     while True:
         params = {
             "where": "1=1",
             "outFields": "*",
             "f": "pgeojson",
             "resultOffset": offset,
-            "resultRecordCount": max_records
+            "resultRecordCount": max_records,
         }
         resp = session.get(f"{url}/query", params=params)
         resp.raise_for_status()
 
-        # Read just this page into a GeoDataFrame
         try:
             page_gdf = gpd.read_file(BytesIO(resp.content))
-        except Exception:
-            # If the response isn’t valid GeoJSON, stop paging
+        except (fiona.errors.DriverError, ValueError):
             break
 
         if page_gdf.empty:
-            # No features left in this page: we’re done
             break
 
-        # Force CRS to WGS84 (GeoJSON is always in DEFAULT_EPSG)
+        # Ensure correct CRS
         page_gdf = page_gdf.set_crs(epsg=DEFAULT_EPSG, allow_override=True)
-
-        all_parts.append(page_gdf)
-
-        # Advance the offset
+        parts.append(page_gdf)
         offset += max_records
 
-    if not all_parts:
+    if not parts:
         return []
 
-    # 3) Drop empty frames and concatenate all pages into a single GeoDataFrame
-    clean_parts = []
-    for df in all_parts:
-        if df.empty:
-            continue
-        # drop columns that are NA
-        df = df.dropna(axis=1, how="all")
-        clean_parts.append(df)
+    # 3) Concatenate and clean empty columns
+    full = pd.concat(parts, ignore_index=True)
+    # drop columns that are entirely NaN
+    full = full.dropna(axis=1, how="all")
+    gdf_all = gpd.GeoDataFrame(full, crs=f"EPSG:{DEFAULT_EPSG}")
 
-    gdf_full = gpd.GeoDataFrame(
-        pd.concat(clean_parts, ignore_index=True),
-        crs=f"EPSG:{DEFAULT_EPSG}"
-    )
+    return [(None, gdf_all, DEFAULT_EPSG, native_wkid)]
 
-    return [(None, gdf_full, DEFAULT_EPSG, native_wkid)]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # "Direct" helpers (no Socrata/ArcGIS)
@@ -400,14 +403,15 @@ def fetch_arcgis_vector(url: str):
 
 def fetch_geojson_direct(url: str):
     """
-    Download a raw GeoJSON URL and return a tuple:
+    Download a raw GeoJSON URL and return a list of tuples:
       (layer_name, GeoDataFrame, source_epsg=4326).
     """
     resp = session.get(url)
     resp.raise_for_status()
     try:
         gdf = gpd.read_file(BytesIO(resp.content))
-    except Exception:
+    except (FionaValueError, DriverError) as err:
+        logger.warning("GeoJSON read failed for %s: %s", url, err)
         return []
 
     gdf.set_crs(epsg=DEFAULT_EPSG, inplace=True)
@@ -417,14 +421,18 @@ def fetch_geojson_direct(url: str):
 
 def fetch_csv_direct(url: str):
     """
-    Download a raw CSV URL and return a tuple
-    (layer_name, GeoDataFrame, source_epsg=4326) if it has latitude/
-    longitude columns, else [].
+    Download a raw CSV URL and return a list of tuples:
+      (layer_name, GeoDataFrame, source_epsg=4326) if it has latitude/
+      longitude columns; else [].
     """
     resp = session.get(url)
     resp.raise_for_status()
+    try:
+        df = pd.read_csv(BytesIO(resp.content))
+    except ParserError as err:
+        logger.warning("CSV parse failed for %s: %s", url, err)
+        return []
 
-    df = pd.read_csv(BytesIO(resp.content))
     if "latitude" not in df.columns or "longitude" not in df.columns:
         return []
 
@@ -432,7 +440,7 @@ def fetch_csv_direct(url: str):
     gdf = gpd.GeoDataFrame(
         df.drop(columns=["latitude", "longitude"]),
         geometry=geometry,
-        crs="EPSG:4326"
+        crs="EPSG:4326",
     )
     layer_name = sanitize_layer_name(Path(url).stem)
     return [(layer_name, gdf, 4326)]
