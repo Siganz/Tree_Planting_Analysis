@@ -10,3 +10,11 @@ black
 flake8
 isort
 pytest
+PyYAML
+fiona
+requests
+zipfile
+tempfile
+shutil
+pathlib
+BytesIO

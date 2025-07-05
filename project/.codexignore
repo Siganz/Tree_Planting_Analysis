@@ -1,0 +1,34 @@
+# ignore Python clutter
+__pycache__/
+*.py[cod]
+/scripts/__pycache__
+/scripts/helpers/__pycache__
+
+# ignore secrets
+secret/
+
+# ignore junk
+scripts/stasis
+*.log
+
+docs/
+secrets/
+config/config.yaml
+replacements.txt
+zip.sh
+project.zip
+
+# ignore all real files in Data/table
+Data/table
+Data/gpkg
+
+# Ignore misc
+.gitignore
+AGENTS.md
+License
+project.tar
+README.md
+replacements.txt
+zip.sh
+.venv
+

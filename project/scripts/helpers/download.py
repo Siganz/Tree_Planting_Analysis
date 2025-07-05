@@ -1,15 +1,16 @@
-import requests
-import zipfile
-import tempfile
 import shutil
-from pathlib import Path
+import tempfile
+import zipfile
 from io import BytesIO
+from pathlib import Path
+
+import fiona
 import geopandas as gpd
 import pandas as pd
-import fiona
+import requests
+from config import get_constant
 from shapely.geometry import Point
 from storage import sanitize_layer_name
-from config import get_constant
 
 DEFAULT_EPSG = get_constant("default_epsg", 4326)
 NYSP_EPSG = get_constant("nysp_epsg", 2263)
@@ -18,9 +19,10 @@ ARCGIS_DEFAULT_MAX_RECORDS = get_constant("arcgis_default_max_records", 1000)
 
 session = requests.Session()
 
-# ────────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 # Socrata helpers
-# ────────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+
 
 def fetch_socrata_table(url: str, app_token: str = None):
     """
@@ -29,9 +31,11 @@ def fetch_socrata_table(url: str, app_token: str = None):
 
     This function will attempt to find geometry in the following order:
      1) Columns named "latitude" & "longitude" (assumed EPSG:4326).
-     2) A GeoJSON-style "location" field: {"type":"Point","coordinates":[lon,lat]}.
+     2) A GeoJSON-style "location" field:
+        {"type": "Point", "coordinates": [lon, lat]}.
      3) A WKT "geometry" field: "POINT(lon lat)".
-     4) Projected X/Y fields (e.g. "sign_x_coord" & "sign_y_coord")—assumed EPSG:2263.
+     4) Projected X/Y fields (e.g. "sign_x_coord" & "sign_y_coord")—
+        assumed EPSG:2263.
 
     Returns [] if no geometry can be found.
     """
@@ -39,8 +43,12 @@ def fetch_socrata_table(url: str, app_token: str = None):
     if app_token:
         headers["X-App-Token"] = app_token
 
-    # If this is the hn5i-inap endpoint without a $limit, add one to pull all rows
-    if url.lower().endswith(".json") and "resource/hn5i-inap.json" in url.lower():
+    # If this is the hn5i-inap endpoint without a $limit,
+    # add one to pull all rows
+    if (
+        url.lower().endswith(".json")
+        and "resource/hn5i-inap.json" in url.lower()
+    ):
         if "?" in url:
             url = url + f"&$limit={SOCRATA_LIMIT}"
         else:
@@ -90,12 +98,20 @@ def fetch_socrata_table(url: str, app_token: str = None):
                     lon, lat = float(lon), float(lat)
                     coords.append(Point(lon, lat))
                     # Copy everything except "location" into the attribute dict
-                    rec_copy = {k: v for k, v in record.items() if k != "location"}
+                    rec_copy = {
+                        k: v
+                        for k, v in record.items()
+                        if k != "location"
+                    }
                     rows.append(rec_copy)
                 except Exception:
                     continue
         if coords:
-            gdf = gpd.GeoDataFrame(rows, geometry=coords, crs=f"EPSG:{DEFAULT_EPSG}")
+            gdf = gpd.GeoDataFrame(
+                rows,
+                geometry=coords,
+                crs=f"EPSG:{DEFAULT_EPSG}",
+            )
             layer_name = sanitize_layer_name(Path(url).stem)
             return [(layer_name, gdf, DEFAULT_EPSG)]
 
@@ -112,12 +128,20 @@ def fetch_socrata_table(url: str, app_token: str = None):
                     lon, lat = float(inside[0]), float(inside[1])
                     coords.append(Point(lon, lat))
                     # Copy everything except "geometry"
-                    rec_copy = {k: v for k, v in record.items() if k != "geometry"}
+                    rec_copy = {
+                        k: v
+                        for k, v in record.items()
+                        if k != "geometry"
+                    }
                     rows.append(rec_copy)
                 except Exception:
                     continue
         if coords:
-            gdf = gpd.GeoDataFrame(rows, geometry=coords, crs=f"EPSG:{DEFAULT_EPSG}")
+            gdf = gpd.GeoDataFrame(
+                rows,
+                geometry=coords,
+                crs=f"EPSG:{DEFAULT_EPSG}",
+            )
             layer_name = sanitize_layer_name(Path(url).stem)
             return [(layer_name, gdf, DEFAULT_EPSG)]
 
@@ -139,12 +163,20 @@ def fetch_socrata_table(url: str, app_token: str = None):
                 x = float(record.get(x_field))
                 y = float(record.get(y_field))
                 coords.append(Point(x, y))
-                rec_copy = {k: v for k, v in record.items() if k not in (x_field, y_field)}
+                rec_copy = {
+                    k: v
+                    for k, v in record.items()
+                    if k not in (x_field, y_field)
+                }
                 rows.append(rec_copy)
             except Exception:
                 continue
         if coords:
-            gdf = gpd.GeoDataFrame(rows, geometry=coords, crs=f"EPSG:{source_epsg}")
+            gdf = gpd.GeoDataFrame(
+                rows,
+                geometry=coords,
+                crs=f"EPSG:{source_epsg}",
+            )
             layer_name = sanitize_layer_name(Path(url).stem)
             return [(layer_name, gdf, source_epsg)]
 
@@ -154,22 +186,35 @@ def fetch_socrata_table(url: str, app_token: str = None):
 
 def fetch_socrata_vector(url: str, app_token: str = None):
     """
-    Fetch a Socrata “vector” (GeoJSON) endpoint and return a GeoDataFrame in EPSG:4326.
-    Request parameters: f=geojson, $limit=50000. Returns:
+    Fetch a Socrata "vector" (GeoJSON) endpoint and return a GeoDataFrame
+    in EPSG:4326.
+
+    Request parameters:
+      f=geojson, $limit=50000.
+
+    Returns:
       [(layer_name, GeoDataFrame, source_epsg=4326)]
     """
     headers = {}
     if app_token:
         headers["X-App-Token"] = app_token
 
-    # If the URL already ends with “.geojson”, just add $limit; otherwise force &f=geojson
+    # If the URL already ends with ".geojson", just add $limit;
+    # otherwise force f=geojson
     if url.lower().endswith(".geojson"):
-        resp = session.get(url, headers=headers, params={"$limit": SOCRATA_LIMIT})
+        resp = session.get(
+            url,
+            headers=headers,
+            params={"$limit": SOCRATA_LIMIT},
+        )
     else:
         resp = session.get(
             url,
             headers=headers,
-            params={"$limit": SOCRATA_LIMIT, "f": "geojson"}
+            params={
+                "$limit": SOCRATA_LIMIT,
+                "f": "geojson",
+            },
         )
     resp.raise_for_status()
 
@@ -191,15 +236,17 @@ def export_spatial_layer(gdf, data_id, gpkg_path):
     """
     gdf.to_file(gpkg_path, layer=data_id, driver="GPKG")
 
-# ────────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 # ArcGIS helpers
-# ────────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 def fetch_arcgis_table(url: str):
     """
-    Fetch an ArcGIS REST “table” endpoint as JSON → GeoDataFrame with EPSG:4326.
-    If no lat/long fields exist, returns []. Otherwise returns:
+    Fetch an ArcGIS REST "table" endpoint as JSON and return a GeoDataFrame
+    in EPSG:4326. If no latitude/longitude fields exist, returns [].
+
+    Returns:
       [(layer_name, GeoDataFrame, source_epsg=4326)].
     """
     query_url = f"{url}/query?where=1=1&outFields=*&f=json"
@@ -227,12 +274,18 @@ def fetch_arcgis_table(url: str):
 
 def fetch_arcgis_vector(url: str):
     """
-    Fetch an ArcGIS FeatureServer “vector” endpoint in pages, so you get ALL features.
-    1) GET <url>?f=json to read service metadata (esp. maxRecordCount, WKID).
-    2) Loop over resultOffset in increments of maxRecordCount, pulling GeoJSON each time.
-    3) Concatenate all pages into one GeoDataFrame (in EPSG:4326).
-    Returns [(None, gdf_all, 4326, native_wkid)].
-    The main loop will substitute layer_id and record native_wkid.
+    Fetch an ArcGIS FeatureServer "vector" endpoint in pages and return all
+    features.
+
+    Steps:
+      1) GET <url>?f=json to read service metadata
+         (esp. maxRecordCount, WKID).
+      2) Loop over resultOffset in increments of maxRecordCount,
+         pulling GeoJSON each time.
+      3) Concatenate all pages into one GeoDataFrame (in EPSG:4326).
+
+    Returns:
+      [(None, gdf_all, 4326, native_wkid)].
     """
     # 1) Read service metadata & extract WKID + maxRecordCount
     info = session.get(f"{url}?f=json").json()
@@ -241,7 +294,8 @@ def fetch_arcgis_vector(url: str):
 
     max_records = info.get("maxRecordCount", ARCGIS_DEFAULT_MAX_RECORDS)
     if not isinstance(max_records, int) or max_records < 1:
-        max_records = ARCGIS_DEFAULT_MAX_RECORDS  # fallback if service misbehaves
+        # fallback if service misbehaves
+        max_records = ARCGIS_DEFAULT_MAX_RECORDS
 
     # 2) Page through all features using resultOffset/resultRecordCount
     all_parts = []  # list of GeoDataFrames for each page
@@ -285,7 +339,7 @@ def fetch_arcgis_vector(url: str):
     for df in all_parts:
         if df.empty:
             continue    
-        #drop columns that are NA 
+        # drop columns that are NA 
         df = df.dropna(axis=1, how="all")
         clean_parts.append(df)
 
@@ -296,14 +350,15 @@ def fetch_arcgis_vector(url: str):
 
     return [(None, gdf_full, DEFAULT_EPSG, native_wkid)]
 
-# ────────────────────────────────────────────────────────────────────────────────
-# “Direct” helpers (no Socrata/ArcGIS)
-# ────────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# "Direct" helpers (no Socrata/ArcGIS)
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 def fetch_geojson_direct(url: str):
     """
-    Download a raw GeoJSON URL and return (layer_name, GeoDataFrame, source_epsg=4326).
+    Download a raw GeoJSON URL and return a tuple:
+      (layer_name, GeoDataFrame, source_epsg=4326).
     """
     resp = session.get(url)
     resp.raise_for_status()
@@ -319,8 +374,9 @@ def fetch_geojson_direct(url: str):
 
 def fetch_csv_direct(url: str):
     """
-    Download a raw CSV URL and return (layer_name, GeoDataFrame, source_epsg=4326)
-    if it has latitude/longitude columns, else [].
+    Download a raw CSV URL and return a tuple
+    (layer_name, GeoDataFrame, source_epsg=4326) if it has latitude/
+    longitude columns, else [].
     """
     resp = session.get(url)
     resp.raise_for_status()
@@ -341,8 +397,8 @@ def fetch_csv_direct(url: str):
 
 def fetch_gpkg_layers(url: str):
     """
-    Download a GeoPackage from a URL, read each layer into a GeoDataFrame, and
-    return [(layer_name, gdf, source_epsg)]. If no CRS is stored, assume 4326.
+    Download a GeoPackage from a URL and read each layer into a GeoDataFrame.
+    Return [(layer_name, gdf, source_epsg)]. If no CRS is stored, assume 4326.
     """
     resp = session.get(url, stream=True)
     resp.raise_for_status()
@@ -368,9 +424,9 @@ def fetch_gpkg_layers(url: str):
 
 def fetch_gdb_or_zip(url: str):
     """
-    Download a zipped FileGDB or Shapefile URL, extract locally, read each dataset
-    into GeoDataFrames, and return [(layer_name, gdf, source_epsg=4326)]. If no CRS,
-    assume 4326. Cleans up temp files on exit.
+    Download a zipped FileGDB or Shapefile URL, extract locally, and read each
+    dataset into GeoDataFrames. Return [(layer_name, gdf, source_epsg=4326)].
+    If no CRS is found, assume 4326. Cleans up temp files on exit.
     """
     resp = session.get(url)
     resp.raise_for_status()
@@ -386,7 +442,11 @@ def fetch_gdb_or_zip(url: str):
         zf.extractall(temp_root)
 
     # Check for FileGDB folders (*.gdb)
-    gdb_candidates = [p for p in Path(temp_root).iterdir() if p.suffix.lower() == ".gdb"]
+    gdb_candidates = [
+        p
+        for p in Path(temp_root).iterdir()
+        if p.suffix.lower() == ".gdb"
+    ]
     if gdb_candidates:
         # Read each layer in the first FileGDB found
         gdb_path = gdb_candidates[0]
