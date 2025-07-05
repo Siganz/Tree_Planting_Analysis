@@ -35,9 +35,9 @@ import fiona
 import geopandas as gpd
 import pandas as pd
 import requests
-from config import get_setting
+from .config import get_setting
 from shapely.geometry import Point
-from storage import sanitize_layer_name
+from .storage import sanitize_layer_name
 
 DEFAULT_EPSG = get_setting('default_epsg')
 NYSP_EPSG = get_setting('nysp_epsg')

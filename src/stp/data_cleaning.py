@@ -4,7 +4,7 @@ from typing import Optional
 
 import geopandas as gpd
 import pandas as pd
-from config import get_setting
+from .config import get_setting
 
 MIN_DBH = get_setting("min_dbh")
 
