@@ -11,8 +11,9 @@ import json
 import logging
 from pathlib import Path
 
-# Read project configuration
-from stp.config_loader import get_setting, get_constant
+# use get_setting (aliased to 'get') so both settings.yaml overrides and
+# defaults.yaml fallbacks work the same way
+from stp.config_loader import get_setting as get, get_constant
 
 from helpers.download import (
     fetch_arcgis_table,
@@ -38,12 +39,17 @@ from helpers.table import (
 logger = logging.getLogger(__name__)
 
 
+def export_spatial_layer(gdf, layer_name, gpkg_path):
+    """Write *gdf* to *gpkg_path* under *layer_name*."""
+    gdf.to_file(gpkg_path, layer=layer_name, driver="GPKG")
+
+
 # Dispatch map: (source_type, format) → fetch function
 FETCHERS = {
     ("socrata", "csv"): fetch_socrata_table,
     ("socrata", "json"): fetch_socrata_table,
-    ("socrata", "geojson"): fetch_socrata_vector,  # noqa: F821
-    ("socrata", "shapefile"): fetch_socrata_vector,  # noqa: F821
+    ("socrata", "geojson"): fetch_socrata_table,
+    ("socrata", "shapefile"): fetch_socrata_table,
 
     ("arcgis", "csv"): fetch_arcgis_table,
     ("arcgis", "json"): fetch_arcgis_table,
@@ -59,17 +65,17 @@ FETCHERS = {
 
 def setup_destinations():
     """Read config settings and prepare output destinations."""
-    socrata_token = get_setting("socrata.app_token", required=True)
-    db_cfg = get_setting("db", {})
+    socrata_token = get("socrata.app_token")
+    db_cfg = get("db", {})
 
     if db_cfg.get("enabled", False):
         db_engine = get_postgis_engine(db_cfg)
     else:
         db_engine = None
 
-    output_epsg = get_setting("output_epsg", get_constant("nysp_epsg"))
-    out_shp_dir = Path(get_setting("output_shapefile"))
-    out_tbl_dir = Path(get_setting("output_tables"))
+    output_epsg = get("data.output_epsg", get_constant("nysp_epsg"))
+    out_shp_dir = Path(get("data.output_shapefile"))
+    out_tbl_dir = Path(get("data.output_tables"))
     out_shp_dir.mkdir(parents=True, exist_ok=True)
     out_tbl_dir.mkdir(parents=True, exist_ok=True)
 
@@ -196,3 +202,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
