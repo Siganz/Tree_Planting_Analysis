@@ -24,11 +24,9 @@ from pathlib import Path
 import yaml
 from sqlalchemy import create_engine
 
-from .table import (
-    build_fields_inventory_gpkg,
-    build_fields_inventory_postgis,
-    write_inventory,
-)
+from .inventory.gpkg import from_gpkg
+from .inventory.postgis import from_postgis
+from .inventory.export import to_csv
 
 if __name__ == "__main__":
     # 1) Read your config.yaml to see if PostGIS is enabled
@@ -57,10 +55,8 @@ if __name__ == "__main__":
             engine = create_engine(
                 f"{driver}://{user}:{pwd}@{host}:{port}/{db}"
             )
-            df = build_fields_inventory_postgis(
-                engine, schema=db_cfg.get("schema", "public")
-            )
-            write_inventory(df, output_dir / "fields_inventory_postgis.csv")
+            df = from_postgis(engine, schema=db_cfg.get("schema", "public"))
+            to_csv(df, output_dir / "fields_inventory_postgis.csv")
         else:
             print("PostGIS is enabled in config,"
                   "but missing connection parameters.")
@@ -68,8 +64,8 @@ if __name__ == "__main__":
         # Dump the GeoPackage schema
         gpkg = input_dir / "project_data.gpkg"
         if gpkg.exists():
-            df = build_fields_inventory_gpkg(gpkg)
-            write_inventory(df, output_dir / "fields_inventory.csv")
+            df = from_gpkg(gpkg)
+            to_csv(df, output_dir / "fields_inventory.csv")
         else:
             print(f"No GeoPackage found at {gpkg}",
                   "→ cannot build fields inventory.")
