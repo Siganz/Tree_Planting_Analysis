@@ -19,12 +19,14 @@ from typing import Any, Optional
 
 import yaml
 
-_CFG_DIR = Path(__file__).resolve().parents[2] / 'config'
-_USER_CFG_PATH = _CFG_DIR / 'config.yaml'
-_CONSTS_PATH = _CFG_DIR / 'constants.yaml'
+# Configuration directory lives alongside the working directory
+BASE_DIR = Path.cwd()
+CFG_DIR = BASE_DIR / "config"
+USER_CFG_PATH = CFG_DIR / "config.yaml"
+CONSTS_PATH = CFG_DIR / "constants.yaml"
 
 # Load constants once
-with open(_CONSTS_PATH, encoding='utf-8') as _f:
+with open(CONSTS_PATH, encoding="utf-8") as _f:
     _CONSTANTS: dict[str, Any] = yaml.safe_load(_f)
 
 
@@ -33,7 +35,7 @@ def get_constant(name: str) -> Any:
     try:
         return _CONSTANTS[name]
     except KeyError as e:
-        raise KeyError(f"Missing constant '{name}' in {_CONSTS_PATH}") from e
+        raise KeyError(f"Missing constant '{name}' in {CONSTS_PATH}") from e
 
 
 def get_setting(key: str, default: Optional[Any] = None) -> Any:
@@ -47,8 +49,8 @@ def get_setting(key: str, default: Optional[Any] = None) -> Any:
         Any: The user override, or the constant, or `default`.
     """
     # 1) Try user config
-    if _USER_CFG_PATH.exists():
-        with open(_USER_CFG_PATH, encoding='utf-8') as _f:
+    if USER_CFG_PATH.exists():
+        with open(USER_CFG_PATH, encoding='utf-8') as _f:
             user_cfg = yaml.safe_load(_f) or {}
         value: Any = user_cfg
         for part in key.split('.'):

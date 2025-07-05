@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 import pandas as pd
 import geopandas as gpd
-from config import get_constant
+from .config import get_constant
 
 LAYER_NAME_MAX_LENGTH = get_constant("layer_name_max_length", 60)
 DEFAULT_TARGET_EPSG = get_constant("nysp_epsg", 2263)
