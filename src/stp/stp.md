@@ -51,7 +51,6 @@ stp/
 ├── download.py
 ├── fields\_inventory.py
 ├── http\_client.py
-├── settings.py
 ├── table.py
 └── **init**.py
 
@@ -64,7 +63,6 @@ stp/
 | Module | Purpose |
 |--------|---------|
 | **config_loader.py** | Read YAML/ENV configuration & expose `get_setting`, `get_constant`. |
-| **settings.py** | Hard-coded fall-backs (NYSP EPSG 2263, default filenames, etc.). |
 | **download.py** | “Orchestrator” – loops through every fetcher listed in config and drops raw files into `Data/raw/`. |
 | **http_client.py** | Thin `requests.Session` wrapper with retry & back-off. |
 | **data_cleaning.py** | Pipeline runner – re-projects, trims fields, fixes datatypes using functions from `cleaning/`. |

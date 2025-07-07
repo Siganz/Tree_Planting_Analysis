@@ -11,7 +11,9 @@ import geopandas as gpd
 
 from .. import http_client
 from ..storage.file_storage import sanitize_layer_name
-from ..settings import DEFAULT_EPSG
+from ..config_loader import get_constant
+
+DEFAULT_EPSG: int = int(get_constant("default_epsg"))
 
 __all__ = ["fetch_gpkg_layers"]
 
