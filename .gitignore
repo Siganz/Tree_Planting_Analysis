@@ -1,29 +1,41 @@
-# Ignore Python clutter
+# -------------------------------
+# 🐍 Python build artifacts
+# -------------------------------
 __pycache__/
 *.py[cod]
-secret/
-scripts/garbage
-secrets/
-replacements.txt
-zip.sh
-project.tar
-zip.py
 .venv/
 .env/
 .pytest_cache
+*.log
 
-# ignore all real files in Data/table
+# -------------------------------
+# 🧪 Project-specific junk & output
+# -------------------------------
+*.tar
+*.zip
+project.zip
+config/user.yaml
+tokens.py
+# -------------------------------
+# 🧾 Secret or local-only folders
+# -------------------------------
+secrets/
+
+# -------------------------------
+# 📊 Data outputs (selectively ignored)
+# -------------------------------
 Data/table/*
 Data/gpkg/*
 
-# but don’t ignore the directory or our placeholder
+# Keep placeholder files and readmes
 !Data/table/
 !Data/gpkg/
 !Data/table/table.md
 !Data/gpkg/gpkg.md
 
-# Ignore data junk
-*.log
-*.tar
-*.zip
-config/user.yaml
+# -------------------------------
+# 🔧 Developer tools/utilities
+# -------------------------------
+zip.py
+project.zip
+

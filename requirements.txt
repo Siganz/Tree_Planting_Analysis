@@ -1,19 +1,9 @@
-# Data & geo
-pandas
-geopandas
-fiona
-shapely
-pyproj
-requests
-
-# Database & I/O
-sqlalchemy
-PyYAML
-
-# Code style & linting
-black
-flake8
-isort
-
-# Testing
-pytest
+fiona==1.10.1
+geopandas==1.1.1
+pandas==2.3.0
+python-dotenv==1.1.1
+PyYAML==6.0.2
+PyYAML==6.0.2
+Requests==2.32.4
+Shapely==2.1.1
+SQLAlchemy==2.0.41
