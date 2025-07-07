@@ -9,12 +9,14 @@ db:
   user: REPLACE_ME
   password: REPLACE_ME
   database: REPLACE_ME
+  
+# I removed the following,
+# so I need to make sure no scripts use it. 
+#data:
+  #output_epsg: 2263
+  #output_shapefile: Data/shapefiles
+  #output_tables: Data/tables
 
-data:
-  output_epsg: 2263
-  output_shapefile: Data/shapefiles
-  output_tables: Data/tables
-
-curb:
-  extension_distance: 7
-  buffer_width: 15
+#curb:
+  #extension_distance: 7
+  #buffer_width: 15

@@ -8,6 +8,9 @@ replacements.txt
 zip.sh
 project.tar
 zip.py
+.venv/
+.env/
+.pytest_cache
 
 # ignore all real files in Data/table
 Data/table/*

@@ -2,13 +2,15 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Download Data",
+      "name": "Run current file (temp)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/bin/download_data",
+      "program": "${file}",
+      "console": "integratedTerminal",
       "env": {
         "PYTHONPATH": "${workspaceFolder}/src"
-      }
+      },
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe"
     }
   ]
 }
