@@ -1,0 +1,11 @@
+epsg:
+  default: 4326
+  nysp: 2263
+
+limits:
+  socrata: 50000
+  arcgis_default_max_records: 1000
+
+validation:
+  layer_name_max_length: 60
+  min_dbh: 0.01

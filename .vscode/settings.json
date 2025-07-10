@@ -1,0 +1,21 @@
+{
+  // Use .venv for all Python execution (linting, IntelliSense, debugging, etc.)
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+
+  // Auto-activate .venv when opening terminal
+  "python.terminal.activateEnvironment": true,
+
+  // Enable Pytest discovery and use the tests/ folder
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["tests"],
+
+  // Optional: Load .env file if you ever want secrets or configs via os.getenv()
+  "python.envFile": "${workspaceFolder}/.env",
+
+  // Optional: If using src/ folder structure
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/src"
+  ],
+  "terminal.integrated.cursorBlinking": true,
+  "todo-tree.tree.showBadges": true
+}

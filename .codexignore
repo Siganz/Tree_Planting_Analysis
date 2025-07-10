@@ -1,0 +1,14 @@
+# ignore VCS
+.git/
+# ignore virtual environments
+.venv/
+env/
+# ignore data blobs
+Data/
+docs/
+# ignore miscellaneous
+*.tar
+*.zip
+AGENTS.md
+hello.txt
+scratch.py

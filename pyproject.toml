@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stp"
+version = "0.1.0"
+description = "Street Tree Planting Analysis tools"
+authors = [ { name="Shawn Ganz", email="ganz.shawn@gmail.com" } ]
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.8"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["stp*"]
+
+[tool.flake8]
+max-line-length = 79
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    "Data"
+]
+ignore = [
+    "E203",  # whitespace before ':', safe to ignore when using black
+    "W503"   # line break before binary operator
+]

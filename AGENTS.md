@@ -1,53 +1,67 @@
 # AGENTS.md
 
-## 🗺️ Project Scope
+## ✏️ Code Style Guide
 
-* Primary code: `scripts/`
-* Configs/templates: `config/`
-* Data inputs: `Data/` (read-only)
-* `.gitignore` excludes hidden/data files—never commit those.
-
-## 🧪 Testing Guidelines
-
-* GIS-native libraries (GDAL, Fiona, Rasterio) are **not** present in this environment.
-* **Skip or stub** any tests or code paths requiring GIS-native functionality.
-* Only run tests on pure-Python modules.
-
-## 🚀 Environment Setup
-
-* Dependencies are pre-installed in the Codex container.
-* Use local `env/environment.yml` (and/or `env/requirements.txt`) for full GIS workflows outside Codex.
-
-## 🛠️ Workflows & Validation
-
-* **Testing:** Run pytest (maxfail=1, warnings off).
-* **Linting:** Use flake8; enforce PEP8 and max line length 79.
-
-## 🧑‍💻 Style
-
-* 4-space indentation
-* No trailing whitespace
-* Imports: stdlib → third-party → local
-* Max line length: 79
-
-## 🧑‍💻 Code Style and Documentation
-
-- All public functions and classes must have clear, descriptive docstrings.
-- Add inline `# comments` to explain non-obvious or complex code sections.
-- Logging (`logger.info`, etc.) should be used in main workflow scripts to track progress and issues.
-- Helpers should avoid logging except for critical errors; prefer raising exceptions for error handling.
-
-## 📋 PR/Commit
-
-* Branch: `codex/<short-desc>`
-* PR Title: `[<area>] <desc>`
-* Commit body: what/why/how to test
-* Never commit secrets/config.yml
-
-## 🤖 Agent Behavior
-
-1. Scan `scripts/` for context before edits.
-2. Run lint/tests before proposing PRs.
-3. Present diffs with clear rationale.
+This project enforces basic Python style conventions across `src/stp/`.
 
 ---
+
+### 🔹 Formatting Rules
+
+- **Indentation**: 4 spaces  
+- **Line length**: max 79 characters  
+- **No trailing whitespace**  
+- **Blank lines**:  
+  - 2 between top-level functions and classes  
+  - 1 between method definitions inside classes  
+
+---
+
+### 🔹 Import Order
+
+1. **Standard library**
+2. **Third-party**
+3. **Local modules** (`src/stp/...`)
+
+Use `isort` or arrange manually to match.
+
+---
+
+### 🔹 Docstrings
+
+- Required on all **public functions** and **classes**
+- Use triple double quotes (`"""docstring"""`)
+- Be concise and descriptive
+
+---
+
+### 🔹 Comments
+
+- Use inline `#` comments sparingly — only for **non-obvious logic**
+- Avoid restating what the code already expresses clearly
+
+---
+
+### 🔹 Enforcement
+
+You can check for style issues using:
+
+```bash
+flake8 src/stp/ --max-line-length=79
+pylint src/stp/
+```
+
+---
+
+### ❌ Exclusions
+
+These folders are not checked by linters:
+
+- `.venv/`
+- `Data/`
+- `config/`
+- `tests/gis_*`
+
+---
+
+This file focuses only on style. Testing, CI, and agents are optional layers you can add later.
