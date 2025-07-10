@@ -17,7 +17,7 @@ from stp.config_loader import get_setting as get, get_constant
 
 from stp.fetch import fetch_arcgis_vector
 
-from stp.storrage.file_storage import (
+from stp.storage.file_storage import (
     get_geopackage_path,
     get_postgis_engine,
     reproject_all_layers,

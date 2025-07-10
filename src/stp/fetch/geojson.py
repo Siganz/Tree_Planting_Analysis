@@ -9,7 +9,7 @@ import geopandas as gpd
 from fiona.errors import DriverError, FionaValueError
 
 from .. import http_client
-from ..storrage.file_storage import sanitize_layer_name
+from ..storage.file_storage import sanitize_layer_name
 from ..settings import DEFAULT_EPSG
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-import stp.storrage.db_storage as dbs
+import stp.storage.db_storage as dbs
 
 
 def test_get_postgis_engine(monkeypatch):

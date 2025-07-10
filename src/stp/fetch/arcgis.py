@@ -9,7 +9,7 @@ from typing import List, Tuple
 import geopandas as gpd
 
 from .. import http_client
-from ..storrage.file_storage import sanitize_layer_name
+from ..storage.file_storage import sanitize_layer_name
 from ..settings import DEFAULT_EPSG
 
 __all__ = ["fetch_arcgis_vector", "fetch_arcgis_table"]
