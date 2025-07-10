@@ -1,6 +1,6 @@
 import geopandas as gpd
 from shapely.geometry import Point
-import stp.cleaning.trees as trees
+import stp.clean.trees as trees
 
 
 def test_clean_trees_basic():

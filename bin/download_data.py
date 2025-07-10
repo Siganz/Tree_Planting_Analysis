@@ -15,9 +15,9 @@ from pathlib import Path
 # defaults.yaml fallbacks work the same way
 from stp.config_loader import get_setting as get, get_constant
 
-from stp.fetchers import fetch_arcgis_vector
+from stp.fetch import fetch_arcgis_vector
 
-from stp.storage.file_storage import (
+from stp.storrage.file_storage import (
     get_geopackage_path,
     get_postgis_engine,
     reproject_all_layers,
@@ -28,7 +28,7 @@ from stp.table import (
     record_layer_metadata_csv,
     record_layer_metadata_db,
 )
-from stp.scripts.download_utils import FETCHERS
+from stp.fetch.lookup import FETCHERS
 
 logger = logging.getLogger(__name__)
 

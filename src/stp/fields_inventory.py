@@ -24,9 +24,9 @@ Dependencies:
 from pathlib import Path
 from sqlalchemy import create_engine
 
-from .inventory.gpkg import from_gpkg
-from .inventory.postgis import from_postgis
-from .inventory.export import to_csv
+from .record.gpkg import from_gpkg
+from .record.postgis import from_postgis
+from .record.export import to_csv
 from .config_loader import get_setting, get_constant
 
 if __name__ == "__main__":

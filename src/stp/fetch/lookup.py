@@ -3,12 +3,12 @@ Fetcher utilization
 """
 # src/stp/scripts/download_utils.py
 
-from stp.fetchers.socrata import dispatch_socrata_table
-from stp.fetchers.arcgis import fetch_arcgis_table, fetch_arcgis_vector
-from stp.fetchers.csv import fetch_csv_direct
-from stp.fetchers.geojson import fetch_geojson_direct
-from stp.fetchers.gdb import fetch_gdb_or_zip
-from stp.fetchers.gpkg import fetch_gpkg_layers
+from stp.fetch.socrata import dispatch_socrata_table
+from stp.fetch.arcgis import fetch_arcgis_table, fetch_arcgis_vector
+from stp.fetch.csv import fetch_csv_direct
+from stp.fetch.geojson import fetch_geojson_direct
+from stp.fetch.gdb import fetch_gdb_or_zip
+from stp.fetch.gpkg import fetch_gpkg_layers
 
 FETCHERS = {
     ("socrata", "csv"):   dispatch_socrata_table,

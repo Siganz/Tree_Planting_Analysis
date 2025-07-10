@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .metadata.db import record as record_layer_metadata_db
-from .metadata.csv import record as record_layer_metadata_csv
+from .record.db import record as record_layer_metadata_db
+from .record.csv import record as record_layer_metadata_csv
 from .inventory.gpkg import (
     from_gpkg as build_fields_inventory_gpkg,
 )

@@ -1,22 +1,11 @@
-socrata:
-  app_token: REPLACE_ME
+epsg:
+  default: 4326
+  nysp: 2263
 
-db:
-  enabled: false
-  driver: REPLACE_ME
-  host: REPLACE_ME
-  port: REPLACE_ME
-  user: REPLACE_ME
-  password: REPLACE_ME
-  database: REPLACE_ME
-  
-# I removed the following,
-# so I need to make sure no scripts use it. 
-#data:
-  #output_epsg: 2263
-  #output_shapefile: Data/shapefiles
-  #output_tables: Data/tables
+limits:
+  socrata: 50000
+  arcgis_default_max_records: 1000
 
-#curb:
-  #extension_distance: 7
-  #buffer_width: 15
+validation:
+  layer_name_max_length: 60
+  min_dbh: 0.01

@@ -1,6 +1,6 @@
 import geopandas as gpd
 from shapely.geometry import Point
-import stp.fetchers.geojson as gj
+import stp.fetch.geojson as gj
 
 
 def test_fetch_geojson_direct(monkeypatch):

@@ -3,7 +3,7 @@ tests csv
 """
 import geopandas as gpd
 from pytest import MonkeyPatch
-import stp.fetchers.csv as csv_f
+import stp.fetch.csv as csv_f
 
 
 def test_fetch_csv_direct(monkeypatch: MonkeyPatch):

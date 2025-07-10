@@ -5,93 +5,93 @@ This was the original workflow created for the project in arcpy. There are some 
 
 1. Drink some coffee
 2. Download & prep sources
-   2.0 Set arcpy.env.overwriteOutput = False
-   2.1 Import toolboxes
-       • Data Management Tools.tbx
-       • Street_Tree_Planting_Analysis_Python.atbx
-   2.2 Set EnvManager:
-       scratchWorkspace = “…/Scrap.gdb”
-       workspace        = “…/Scrap.gdb”
-   2.3 Define source paths & queries:
+   2.1 Define source paths & queries:
     - trees
         - json
-        -
+
     - work_orders
         - json
-        -
+
     - planting_spaces
         - json
-        -
+
     - street_sign
         - json
-        -
+
     - hydrants
         - json
-        -
+
     - green_infrastructure
         - json
-        -
+
     - subway_lines
         - shapefile
-        -
+
     - borough
         - shapefile
-        -
+
     - community_districts
         - shapefile
-        -
+
     - council_districts
         - shapefile
-        -
+
     - congressional_districts
         - shapefile
-        -
+
     - senate_districts
         - shapefile
-        -
+
     - assembly_districts
         - shapefile
-        -
+
     - community_tabulations
         - shapefile
-        -
+
     - neighborhood_tabulations
         - shapefile
-        -
+
     - census_tracts
         - shapefile
-        -
+
     - census_blocks
         - shapefile
-        -
+
     - zoning_districts
         - shapefile
-        -
+
     - commercial_districts
         - shapefile
-        -
+
     - special_purpose_districts
         - shapefile
-        -
+
     - pluto
         - shapefile
-        -
+
     - street_center
         - shapefile
-        -
+
     - curb
         - shapefile
-        -
+
     - curb_cut
         - shapefile
-        -
+
     - sidewalk
         - shapefile
-        -
 
+3. Download & Convert JSON → GeoJSON / in-geodatabase exports
+    - Data sources: 
+        - Socrata
+        - ArcGIS REST 
+    - Data is initially stored in ./data 
+    * files are stored in a gpkg in ./data/gpkg
 
+4. Data Cleaning
+    - 
 
-3. Convert JSON → GeoJSON / in-geodatabase exports
+5. Preliminary Operations
    3.1 ExportFeatures(Online_NYZD → NYZD)
    3.2 PairwiseBuffer(NYZD → NYZD_Buffer, 20 ft)
    3.3 ExportFeatures(BK_Vaults → BK_Vaults_2)

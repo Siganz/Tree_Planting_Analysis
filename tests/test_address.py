@@ -1,6 +1,6 @@
 import geopandas as gpd
 from shapely.geometry import Point
-import stp.cleaning.address as addr
+import stp.clean.address as addr
 
 
 def test_clean_street_signs():
