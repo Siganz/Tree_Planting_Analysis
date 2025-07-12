@@ -4,8 +4,8 @@ from typing import List, Tuple
 
 import geopandas as gpd
 
-from .fetch.geojson import fetch_geojson_direct
-from .fetch.csv import fetch_csv_direct
+from .geojson import fetch_geojson_direct
+from .csv import fetch_csv_direct
 
 
 def fetch_direct(url: str) -> List[Tuple[str, gpd.GeoDataFrame, int]]:

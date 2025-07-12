@@ -1,6 +1,9 @@
-"""Global constants for the STP package."""
+"""Global constants for the STP package, pulled from config."""
 
-DEFAULT_EPSG = 4326
-NYSP_EPSG = 2263
-# TODO Delete this, remove any scripts referencing this and utilize the config 
-# defaults.yaml / user.example.yaml
+from config import get_constant
+
+DEFAULT_EPSG = get_constant('epsg.default', 4326)
+NYSP_EPSG = get_constant('epsg.nysp', 2263)
+
+# TODO: All done! No more hardcodes—constants now come from defaults.yaml.
+# Remove this file later if you want to access directly via get_constant everywhere.

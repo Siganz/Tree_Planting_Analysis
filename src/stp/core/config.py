@@ -4,17 +4,21 @@ Config loader for STP.
 Loads YAML defaults, optional user overrides, and environment variables
 with deep-merge logic and caching via lru_cache.
 Provides get_setting() and get_constant() for dot-path access.
+Also loads and validates workflow.yaml for pipeline orchestration.
 """
 
 from __future__ import annotations
 
 import os
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict
 
 import yaml
 from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.INFO)
 
 # Load environment variables from .env into os.environ (if .env exists)
 load_dotenv()
@@ -131,4 +135,39 @@ def get_constant(key: str, default: Any | None = None) -> Any:
     return default if value is None else value
 
 
-__all__ = ["load_user_config", "load_config", "get_setting", "get_constant"]
+@lru_cache(maxsize=1)
+def load_workflow(path: str = 'config/workflow.yaml') -> Dict[str, Any]:
+    """
+    Parse workflow.yaml, merge with config globals (e.g., from defaults.yaml),
+    and perform basic validation. This drives the pipeline orchestrator.
+    Cached for efficiency like load_config().
+    """
+    root = Path(__file__).resolve().parents[2]
+    full_path = root / path
+    with open(full_path, 'r', encoding='utf-8') as f:
+        workflow = yaml.safe_load(f)
+
+    # Merge globals from the main config (e.g., EPSG defaults, limits)
+    config = load_config()
+    workflow['globals'] = config  # Merge the full config for broader access
+
+    # Basic validation to catch errors early (expand as needed)
+    required_sections = ['sources', 'prep_ops']  # Add 'final_clip', 'big_scripts' if always needed
+    for section in required_sections:
+        if section not in workflow:
+            raise ValueError(f"workflow.yaml missing '{section}' section")
+    for dataset_id, dataset in workflow['sources'].items():
+        if 'url' not in dataset or 'format' not in dataset:
+            logging.warning("Source %s missing 'url' or 'format'", dataset_id)
+
+    logging.info("Parsed and merged workflow.yaml with config globals")
+    return workflow
+
+
+__all__ = [
+    "load_user_config",
+    "load_config",
+    "get_setting",
+    "get_constant",
+    "load_workflow"
+    ]

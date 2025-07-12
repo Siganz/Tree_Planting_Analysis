@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  postgis:
+    image: postgis/postgis:17-3.5  # Latest stable (Postgres 17 + PostGIS 3.5; auto-pulls if needed)
+    restart: always  # Auto-restart on crashes
+    ports:
+      - "5432:5432"  # Maps container's 5432 to your machine's 5432 (change left side if conflicted)
+    environment:
+      POSTGRES_USER: admin  # Your default
+      POSTGRES_PASSWORD: admin  # Your default (change for prod!)
+      POSTGRES_DB: tree_pipeline  # Auto-creates this DB
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # Saves data even if container stops
+
+volumes:
+  pgdata:  # Persists your DB files locally

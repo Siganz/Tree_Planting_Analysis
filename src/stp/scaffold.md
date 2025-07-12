@@ -1,95 +1,95 @@
-# Original Arcpy Workflow
+# Scaffold.md: Tree Planting Analysis Pipeline Overview
 
-## Info
-This was the original workflow created for the project in arcpy. There are some specific order, but the end result was a bunch of layers that will be utilized as either information to join to the potential tree points created at the end of the projects pipeline or information to clip from the sidewalks. 
+This document outlines the high-level workflow for the STP (Spatial Tabular Pipeline) GIS project, originally built in ArcPy/ModelBuilder and now converted to pure Python (using GeoPandas for ops like buffers/unions/clips). The focus is NYC tree planting analysis, but it's designed for flexibility (e.g., toggle steps for other cities via config edits). We use a unified YAML config to drive the pipeline dynamically, with Docker for automatic PostGIS setup (spatial DB storage for efficient queries/filters).
 
-1. Drink some coffee
-2. Download & prep sources
-   2.1 Define source paths & queries:
-    - trees
-        - json
+## 1. Define Configuration
+Configuration is centralized for ease—edit files to customize sources, ops, filters, and params without changing code. This replaces a "locked" pipeline with variable/user-defined flows (e.g., nest ops in YAML for reordering/toggling).
 
-    - work_orders
-        - json
+- **root/config/workflow.yaml**: Main unified config (combines sources, prep ops, filters, and final steps).
+  - Data sources from open data portals (e.g., Socrata/ArcGIS REST).
+  - Includes URL, type/format, schema, filter parameters (e.g., Socrata $where queries).
+  - Nested ops/steps for processing (e.g., copy → select → buffer), with descriptions, enabled toggles, inputs/outputs.
+  - Users can fill out or override (e.g., add local paths for offline use).
+  - For reusing a feature class multiple times (e.g., curb_cut in different filters): Reference the same output_layer in steps—no duplication needed. If mutable (changes needed without overwriting), nest a 'copy' op first. If non-mutable download, use local_path fallback in sources section.
+  - Example snippet (from our merged version):
+    ```yaml
+    data:  # Top-level for all datasets (renamed from 'data_id' for clarity)
+        trees:
+            sources:  # Fetch details
+                type: "json"
+                source_type: "socrata"
+                format: "json"
+                url: "https://data.cityofnewyork.us/resource/hn5i-inap.json"
+                schema: "political"
+                filter: "SITE_TYPE = 'Tree Site' AND CONDITION NOT IN ('Dead','Removed','Stump')"
+                to_layer: "trees_raw"
+                enabled: true
+            prep_ops:  # Nested processing
+                description: "Existing tree locations to avoid"
+                enabled: true
+                steps:
+                    - op: copy
+                    input: "trees_raw"  # References the source's to_layer
+                    output: "trees_copy"
+                    - op: xy_to_point
+                    output: "trees_1"
+                    - op: buffer
+                    distance: 25
+                    output: "trees_ready"
 
-    - planting_spaces
-        - json
+        nyzd:  # Another dataset bundle
+            sources:
+            # ... (URL/type/filter)
+            prep_ops:
+            # ... (steps like copy/select)
+    ```
 
-    - street_sign
-        - json
+- **root/config/defaults.yaml**: Stores default parameters for tools/ops (e.g., EPSG codes, limits). Optional but useful for globals; can be loaded into pipeline.py and overridden in workflow.yaml if needed.
+  - Example:
+    ```yaml
+    epsg:
+      default: 4326
+      nysp: 2263
+    limits:
+      socrata: 50000
+      arcgis_default_max_records: 1000
+    validation:
+      layer_name_max_length: 60
+      min_dbh: 0.01
+    ```
 
-    - hydrants
-        - json
+- **root/config/user.yaml**: User-specific overrides (e.g., API keys, batch params, DB creds). Loads defaults.yaml if none specified. With variable pipelines, this is key for personalization (e.g., change Socrata batch size).
+  - Example for DB/Docker:
+    ```yaml
+    db:
+      user: 'admin'
+      pass: 'admin'
+      host: 'localhost'
+      port: 5432
+      db_name: 'tree_pipeline'
+    api:
+      socrata_key: 'your_key_here'  # If needed for throttled APIs
+      batch_size: 50000  # Override defaults never above 50000, if above revert to 50,000
+    ```
 
-    - green_infrastructure
-        - json
+## 2. Download Sources & Create Mutable DB 
+Primary goal: Fetch and prep NYC-relevant data for tree planting (e.g., trees, hydrants, sidewalks) from open sources. Variable for other cities (edit workflow.yaml URLs/filters). Downloads via fetchers/ (Socrata/ArcGIS REST handlers in STP tools), with API keys/batch params from user.yaml (e.g., batch to avoid limits on big datasets like census blocks).
 
-    - subway_lines
-        - shapefile
+- Sources located in workflow.yaml 'sources' section (merged from old sources.json).
+- Sources can be from anywhere, but default to Socrata and ArcGIS REST.
+  - Requires API key/parameters (e.g., batch size/combining for large fetches) from user.yaml.
+- Storage: Use Docker to automatically install/setup a DB with PostgreSQL/PostGIS for spatial efficiency (queries/filters on layers like zoning districts).
+  - Docker auto-creates the environment (isolated, portable—run `docker compose up -d` from docker-compose.yml).
+  - Load creds from user.yaml (e.g., user: 'admin', pass: 'admin', host: 'localhost', port: 5432).
+  - Connect: `engine = create_engine('postgresql://admin:admin@localhost:5432/tree_pipeline')`.
+  - Load data: After download, `gdf.to_postgis('trees_raw', engine, if_exists='replace')` (GeoPandas handles conversion to spatial tables).
+  - Why PostGIS? Faster for ops (e.g., SQL filters during select) than files; fallback to GPKG if needed.
+- Prep: Run nested steps from workflow.yaml 'prep_ops' (e.g., copy → xy_to_point → buffer). Outputs saved as new tables/layers.
+- Final clip/big scripts: Handled in workflow.yaml sections (nested steps for union/clip/points generation, then nostanding/rank/curb).
 
-    - borough
-        - shapefile
-
-    - community_districts
-        - shapefile
-
-    - council_districts
-        - shapefile
-
-    - congressional_districts
-        - shapefile
-
-    - senate_districts
-        - shapefile
-
-    - assembly_districts
-        - shapefile
-
-    - community_tabulations
-        - shapefile
-
-    - neighborhood_tabulations
-        - shapefile
-
-    - census_tracts
-        - shapefile
-
-    - census_blocks
-        - shapefile
-
-    - zoning_districts
-        - shapefile
-
-    - commercial_districts
-        - shapefile
-
-    - special_purpose_districts
-        - shapefile
-
-    - pluto
-        - shapefile
-
-    - street_center
-        - shapefile
-
-    - curb
-        - shapefile
-
-    - curb_cut
-        - shapefile
-
-    - sidewalk
-        - shapefile
-
-3. Download & Convert JSON → GeoJSON / in-geodatabase exports
-    - Data sources: 
-        - Socrata
-        - ArcGIS REST 
-    - Data is initially stored in ./data 
-    * files are stored in a gpkg in ./data/gpkg
-
-4. Data Cleaning
+## 3. Initiate Pipeline
     - 
+
 
 5. Preliminary Operations
    3.1 ExportFeatures(Online_NYZD → NYZD)

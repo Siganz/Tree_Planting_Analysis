@@ -24,7 +24,7 @@ from stp.storage.file_storage import (
     sanitize_layer_name,
     export_spatial_layer,
 )
-from stp.table import (
+from stp.process.table import (
     record_layer_metadata_csv,
     record_layer_metadata_db,
 )

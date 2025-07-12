@@ -10,16 +10,16 @@ import pandas as pd
 from pandas.errors import ParserError
 from shapely.geometry import Point
 
-from .. import http_client
+from ..core import http
 from ..storage.file_storage import sanitize_layer_name
-from ..settings import DEFAULT_EPSG
+from ..core import DEFAULT_EPSG #TODO use config.py to get default values
 
 logger = logging.getLogger(__name__)
 
 
 def fetch_csv_direct(url: str) -> List[Tuple[str, gpd.GeoDataFrame, int]]:
     """Download and parse a CSV URL."""
-    data = http_client.fetch_bytes(url)
+    data = http.fetch_bytes(url)
     try:
         df = pd.read_csv(BytesIO(data))
     except ParserError as err:

@@ -9,23 +9,18 @@ description = "Street Tree Planting Analysis tools"
 authors = [ { name="Shawn Ganz", email="ganz.shawn@gmail.com" } ]
 readme = "README.md"
 license = { file="LICENSE" }
-requires-python = ">=3.8"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["stp*"]
-
-[tool.flake8]
-max-line-length = 79
-exclude = [
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-    ".venv",
-    "Data"
+requires-python = ">=3.10"
+dependencies = [
+    "geopandas>=0.14.0",
+    "pandas>=2.0",
+    "shapely>=2.0",
+    "sqlalchemy>=2.0",
+    "requests>=2.0",
+    "pyproj",
+    "psycopg2-binary",
 ]
-ignore = [
-    "E203",  # whitespace before ':', safe to ignore when using black
-    "W503"   # line break before binary operator
-]
+
+[project.scripts]  # CLI entry points!
+stp-download = "stp.download:main"  # Add a main() function to download.py if needed
+stp-clean = "stp.data_cleaning:main"  # Same for others
+stp-inventory = "stp.fields_inventory:main"

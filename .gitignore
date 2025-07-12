@@ -7,7 +7,9 @@ __pycache__/
 .env/
 .pytest_cache
 *.log
-
+/scrap
+src/arcpy
+data/
 # -------------------------------
 # 🧪 Project-specific junk & output
 # -------------------------------

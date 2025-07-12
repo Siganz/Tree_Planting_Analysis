@@ -1,4 +1,4 @@
-import stp.download as dl
+import stp.fetch.download as dl
 
 
 def test_fetch_direct_dispatch(monkeypatch):
